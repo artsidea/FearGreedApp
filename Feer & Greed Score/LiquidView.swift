@@ -25,8 +25,8 @@ struct LiquidView: View {
             .onChange(of: motion.gravity) { _ in
                 sceneHolder.scene.setGravity(dx: motion.gravity.x * 6, dy: motion.gravity.y * 6)
             }
-            .onChange(of: score) { _ in
-                let dropletCount = max(1, score * 4)
+            .onChange(of: score) { newScore in
+                let dropletCount = max(1, newScore * 4)
                 sceneHolder.scene.updateDropletCount(dropletCount)
             }
     }

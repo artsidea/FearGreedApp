@@ -11,7 +11,9 @@ struct VIXScoreCalculator {
     static func vixToScore(vix: Double) -> Int {
         let capped = min(max(vix, 10), 45)
         let normalized = (45 - capped) / (45 - 10) // 0~1
-        return Int(normalized * 100)
+        let score = Int(normalized * 100)
+        
+        return Int(sqrt(Double(score) * 100))
     }
 
     static func mood(for score: Int) -> String {

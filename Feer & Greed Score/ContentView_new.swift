@@ -36,11 +36,11 @@ struct ShadowText: UIViewRepresentable {
 }
 
 struct ContentView: View {
-    @State private var score: Int = 66
+    @State private var score: Int = VIXFetcher.shared.getLastScore()
     @State private var vixValue: Double = 0
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var lastRefresh: Date? = nil
+    @State private var lastRefresh: Date? = VIXFetcher.shared.getLastUpdateTime()
     @State private var now: Date = Date()
     @State private var originalScore: Int? = nil
     @State private var phase: CGFloat = 0
@@ -121,6 +121,9 @@ struct ContentView: View {
                 // 하단 안내 (카운트다운 + 업데이트 시각)
                 VStack {
                     Spacer()
+                    Text("VIX: \(String(format: "%.2f", VIXFetcher.shared.getLastVIXValue()))")
+                        .font(.caption)
+                        .foregroundColor(.black)
                     Text("NEXT UPDATE IN: \(timeLeftString) (\(nextVIXUpdate.formatted(date: .omitted, time: .shortened)))")
                         .font(.caption)
                         .foregroundColor(.black)
@@ -172,11 +175,12 @@ struct ContentView: View {
         errorMessage = nil
         Task {
             do {
-                let vix = try await VIXFetcher.shared.fetchVIX()
+                let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
                 await MainActor.run {
-                    self.vixValue = vix
-                    self.score = VIXScoreCalculator.vixToScore(vix: vix)
-                    self.originalScore = VIXScoreCalculator.vixToScore(vix: vix)
+                    self.score = sentiment.finalScore
+                    // UserDefaults에 저장 (위젯과 공유)
+                    let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                    userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
                     self.isLoading = false
                 }
             } catch {

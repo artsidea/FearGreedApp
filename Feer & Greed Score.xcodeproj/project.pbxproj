@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4B79AAE72DD3967B00D67625 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B79AAE62DD3967B00D67625 /* WidgetKit.framework */; };
+		4B79AAE92DD3967B00D67625 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B79AAE82DD3967B00D67625 /* SwiftUI.framework */; };
+		4B79AAF82DD3967D00D67625 /* FearGreedWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4B79AA5C2DD1C76100D67625 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +27,48 @@
 			remoteGlobalIDString = 4B79AA4D2DD1C75F00D67625;
 			remoteInfo = "Feer & Greed Score";
 		};
+		4B79AAF62DD3967D00D67625 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B79AA462DD1C75F00D67625 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4B79AAE32DD3967B00D67625;
+			remoteInfo = FearGreedWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4B79AAF92DD3967D00D67625 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4B79AAF82DD3967D00D67625 /* FearGreedWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		4B79AA4E2DD1C75F00D67625 /* Feer & Greed Score.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Feer & Greed Score.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B79AA5B2DD1C76100D67625 /* Feer & Greed ScoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Feer & Greed ScoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B79AA652DD1C76100D67625 /* Feer & Greed ScoreUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Feer & Greed ScoreUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FearGreedWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B79AAE62DD3967B00D67625 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4B79AAE82DD3967B00D67625 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		4B79AAFF2DD3ADDB00D67625 /* FearGreedWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FearGreedWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "FearGreedWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B79AA502DD1C75F00D67625 /* Feer & Greed Score */ = {
@@ -43,6 +84,14 @@
 		4B79AA682DD1C76100D67625 /* Feer & Greed ScoreUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Feer & Greed ScoreUITests";
+			sourceTree = "<group>";
+		};
+		4B79AAEA2DD3967B00D67625 /* FearGreedWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "FearGreedWidgetExtension" target */,
+			);
+			path = FearGreedWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,15 +118,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4B79AAE12DD3967B00D67625 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4B79AAE92DD3967B00D67625 /* SwiftUI.framework in Frameworks */,
+				4B79AAE72DD3967B00D67625 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		4B79AA452DD1C75F00D67625 = {
 			isa = PBXGroup;
 			children = (
+				4B79AAFF2DD3ADDB00D67625 /* FearGreedWidgetExtension.entitlements */,
 				4B79AA502DD1C75F00D67625 /* Feer & Greed Score */,
 				4B79AA5E2DD1C76100D67625 /* Feer & Greed ScoreTests */,
 				4B79AA682DD1C76100D67625 /* Feer & Greed ScoreUITests */,
+				4B79AAEA2DD3967B00D67625 /* FearGreedWidget */,
+				4B79AAE52DD3967B00D67625 /* Frameworks */,
 				4B79AA4F2DD1C75F00D67625 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +149,18 @@
 				4B79AA4E2DD1C75F00D67625 /* Feer & Greed Score.app */,
 				4B79AA5B2DD1C76100D67625 /* Feer & Greed ScoreTests.xctest */,
 				4B79AA652DD1C76100D67625 /* Feer & Greed ScoreUITests.xctest */,
+				4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4B79AAE52DD3967B00D67625 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4B79AAE62DD3967B00D67625 /* WidgetKit.framework */,
+				4B79AAE82DD3967B00D67625 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +173,12 @@
 				4B79AA4A2DD1C75F00D67625 /* Sources */,
 				4B79AA4B2DD1C75F00D67625 /* Frameworks */,
 				4B79AA4C2DD1C75F00D67625 /* Resources */,
+				4B79AAF92DD3967D00D67625 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4B79AAF72DD3967D00D67625 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4B79AA502DD1C75F00D67625 /* Feer & Greed Score */,
@@ -163,6 +236,28 @@
 			productReference = 4B79AA652DD1C76100D67625 /* Feer & Greed ScoreUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "FearGreedWidgetExtension" */;
+			buildPhases = (
+				4B79AAE02DD3967B00D67625 /* Sources */,
+				4B79AAE12DD3967B00D67625 /* Frameworks */,
+				4B79AAE22DD3967B00D67625 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4B79AAEA2DD3967B00D67625 /* FearGreedWidget */,
+			);
+			name = FearGreedWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = FearGreedWidgetExtension;
+			productReference = 4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +279,9 @@
 						CreatedOnToolsVersion = 16.3;
 						TestTargetID = 4B79AA4D2DD1C75F00D67625;
 					};
+					4B79AAE32DD3967B00D67625 = {
+						CreatedOnToolsVersion = 16.3;
+					};
 				};
 			};
 			buildConfigurationList = 4B79AA492DD1C75F00D67625 /* Build configuration list for PBXProject "Feer & Greed Score" */;
@@ -203,6 +301,7 @@
 				4B79AA4D2DD1C75F00D67625 /* Feer & Greed Score */,
 				4B79AA5A2DD1C76100D67625 /* Feer & Greed ScoreTests */,
 				4B79AA642DD1C76100D67625 /* Feer & Greed ScoreUITests */,
+				4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +322,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4B79AA632DD1C76100D67625 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4B79AAE22DD3967B00D67625 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +359,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4B79AAE02DD3967B00D67625 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +378,11 @@
 			isa = PBXTargetDependency;
 			target = 4B79AA4D2DD1C75F00D67625 /* Feer & Greed Score */;
 			targetProxy = 4B79AA662DD1C76100D67625 /* PBXContainerItemProxy */;
+		};
+		4B79AAF72DD3967D00D67625 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */;
+			targetProxy = 4B79AAF62DD3967D00D67625 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -396,6 +514,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = "Feer & Greed Score/Feer & Greed Score.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 688QA9GU4U;
@@ -425,6 +544,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = "Feer & Greed Score/Feer & Greed Score.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 688QA9GU4U;
@@ -520,6 +640,62 @@
 			};
 			name = Release;
 		};
+		4B79AAFA2DD3967D00D67625 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = FearGreedWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 688QA9GU4U;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FearGreedWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FearGreedWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score.FearGreedWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4B79AAFB2DD3967D00D67625 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = FearGreedWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 688QA9GU4U;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FearGreedWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FearGreedWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score.FearGreedWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -555,6 +731,15 @@
 			buildConfigurations = (
 				4B79AA762DD1C76100D67625 /* Debug */,
 				4B79AA772DD1C76100D67625 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "FearGreedWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B79AAFA2DD3967D00D67625 /* Debug */,
+				4B79AAFB2DD3967D00D67625 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
