@@ -35,6 +35,19 @@ struct ShadowText: UIViewRepresentable {
     }
 }
 
+enum MarketType: String, CaseIterable {
+    case stock = "Stock"
+    case coin = "Coin"
+}
+
+struct CoinFearGreed: Decodable {
+    struct Data: Decodable {
+        let value: String
+        let value_classification: String
+    }
+    let data: [Data]
+}
+
 struct ContentView: View {
     @State private var score: Int = VIXFetcher.shared.getLastScore()
     @State private var vixValue: Double = 0
@@ -47,6 +60,13 @@ struct ContentView: View {
     @State private var time: CGFloat = 0
     @State private var scoreRect: CGRect = .zero
     @ObservedObject private var motion = MotionManager.shared
+    @State private var selectedMarket: MarketType = .stock
+    @State private var coinMood: String = ""
+    @State private var isTransitioning = false
+    @State private var previousMarket: MarketType = .stock
+    @State private var currentMarket: MarketType = .stock
+    @State private var currentScore: Int = 0
+    @State private var currentCoinMood: String = ""
     
     // VIX 공식 업데이트 시각 (매일 오전 7시, 한국 시간)
     private var nextVIXUpdate: Date {
@@ -76,10 +96,12 @@ struct ContentView: View {
     
     var body: some View {
         GeometryReader { geo in
-            let width = geo.size.width
+            let _ = geo.size.width
             let height = geo.size.height
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(0.1).ignoresSafeArea().zIndex(0)
+            ZStack {
+                // 배경
+                Color.black.opacity(0.1).ignoresSafeArea()
+                
                 // 구간별 표시 (왼쪽)
                 let sectionLabels = ["Extreme Greed", "Greed", "Neutral", "Fear", "Extreme Fear"]
                 let sectionRanges = [100, 75, 55, 45, 20, 0]
@@ -107,29 +129,50 @@ struct ContentView: View {
                 .padding(.top, 8)
                 .zIndex(10)
                 .allowsHitTesting(false)
+                
                 // 파티클 효과
-                LiquidView(score: score, color: scoreColor)
+                LiquidView(score: currentScore, color: currentMarket == .stock ? scoreColor : coinColor, marketType: currentMarket)
                     .zIndex(2)
-                // 중앙 점수
-                ShadowText(
-                    text: "\(score)",
-                    size: min(width, height) * 0.44,
-                    weight: .ultraLight
+                
+                // 상단 고정 토글
+                Picker("Market", selection: $selectedMarket) {
+                    ForEach(MarketType.allCases, id: \.self) { type in
+                        Text(type.rawValue)
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                .frame(width: geo.size.width * 0.8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 )
-                .position(x: width/2 + CGFloat(motion.gravity.x) * 40, y: height/2)
-                .zIndex(2)
+                .disabled(isTransitioning)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, -400)
+                .zIndex(20)
+                
                 // 하단 안내 (카운트다운 + 업데이트 시각)
                 VStack {
                     Spacer()
-                    Text("VIX: \(String(format: "%.2f", VIXFetcher.shared.getLastVIXValue()))")
-                        .font(.caption)
-                        .foregroundColor(.black)
-                    Text("NEXT UPDATE IN: \(timeLeftString) (\(nextVIXUpdate.formatted(date: .omitted, time: .shortened)))")
-                        .font(.caption)
-                        .foregroundColor(.black)
-                        .padding(.bottom, height * 0.04)
+                    if currentMarket == .coin {
+                        Text("COIN FEAR & GREED: \(currentScore) (\(currentCoinMood))")
+                            .font(.caption)
+                            .foregroundColor(.black)
+                    } else {
+                        Text("VIX: \(String(format: "%.2f", VIXFetcher.shared.getLastVIXValue()))")
+                            .font(.caption)
+                            .foregroundColor(.black)
+                        Text("NEXT UPDATE IN: \(timeLeftString) (\(nextVIXUpdate.formatted(date: .omitted, time: .shortened)))")
+                            .font(.caption)
+                            .foregroundColor(.black)
+                            .padding(.bottom, height * 0.04)
+                    }
                 }
                 .zIndex(20)
+                
                 if let error = errorMessage {
                     VStack {
                         Spacer()
@@ -139,13 +182,15 @@ struct ContentView: View {
                         Spacer()
                     }
                 }
-            }
-            .onTapGesture {
-                if let original = originalScore {
-                    score = original
-                }
+                
+                // 검은색 전환 오버레이
+                Color.black
+                    .ignoresSafeArea()
+                    .opacity(isTransitioning ? 1 : 0)
+                    .zIndex(100)
             }
             .onAppear {
+                currentScore = VIXFetcher.shared.getLastScore()
                 fetchData()
                 Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                     self.now = Date()
@@ -154,6 +199,59 @@ struct ContentView: View {
                     withAnimation(.linear(duration: 1/60)) {
                         time += 1/60
                         phase = sin(time) * .pi
+                    }
+                }
+            }
+            .onChange(of: selectedMarket) { newValue in
+                guard newValue != previousMarket else { return }
+                previousMarket = newValue
+                
+                // 전환 시작 (검은색으로 fade out)
+                withAnimation(.easeOut(duration: 0.2)) {
+                    isTransitioning = true
+                }
+                
+                // 검은색이 완전히 화면을 덮은 후에 데이터를 가져오고 컨텐츠를 업데이트
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    Task {
+                        do {
+                            if newValue == .stock {
+                                let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
+                                await MainActor.run {
+                                    currentScore = sentiment.finalScore
+                                    currentMarket = newValue
+                                    currentCoinMood = ""
+                                    let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                                    userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
+                                    isLoading = false
+                                }
+                            } else {
+                                let url = URL(string: "https://api.alternative.me/fng/")!
+                                let (data, _) = try await URLSession.shared.data(from: url)
+                                let decoded = try JSONDecoder().decode(CoinFearGreed.self, from: data)
+                                let value = Int(decoded.data.first?.value ?? "50") ?? 50
+                                let mood = decoded.data.first?.value_classification ?? ""
+                                await MainActor.run {
+                                    currentScore = value
+                                    currentMarket = newValue
+                                    currentCoinMood = mood
+                                    isLoading = false
+                                }
+                            }
+                            
+                            // 데이터 업데이트 후 검은색 오버레이 제거
+                            await MainActor.run {
+                                withAnimation(.easeIn(duration: 0.2)) {
+                                    isTransitioning = false
+                                }
+                            }
+                        } catch {
+                            await MainActor.run {
+                                errorMessage = "데이터를 가져오는데 실패했습니다: \(error.localizedDescription)"
+                                isLoading = false
+                                isTransitioning = false
+                            }
+                        }
                     }
                 }
             }
@@ -170,18 +268,42 @@ struct ContentView: View {
         }
     }
     
+    private var coinColor: Color {
+        switch score {
+        case 0..<20: return .purple // Extreme Fear
+        case 20..<45: return Color(red: 110/255, green: 60/255, blue: 200/255) // Fear (보라+파랑 느낌)
+        case 45..<55: return .blue // Neutral
+        case 55..<75: return .cyan // Greed
+        default: return .mint // Extreme Greed
+        }
+    }
+    
     private func fetchData() {
         isLoading = true
         errorMessage = nil
         Task {
             do {
-                let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
+                if selectedMarket == .stock {
+                    let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
+                    await MainActor.run {
+                        self.score = sentiment.finalScore
+                        let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                        userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
+                        self.isLoading = false
+                        self.coinMood = ""
+                    }
+                } else {
+                    // 코인 공포/탐욕 지수 fetch
+                    let url = URL(string: "https://api.alternative.me/fng/")!
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    let decoded = try JSONDecoder().decode(CoinFearGreed.self, from: data)
+                    let value = Int(decoded.data.first?.value ?? "50") ?? 50
+                    let mood = decoded.data.first?.value_classification ?? ""
                 await MainActor.run {
-                    self.score = sentiment.finalScore
-                    // UserDefaults에 저장 (위젯과 공유)
-                    let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
-                    userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
+                        self.score = value
+                        self.coinMood = mood
                     self.isLoading = false
+                    }
                 }
             } catch {
                 await MainActor.run {

@@ -61,7 +61,7 @@ struct FearGreedWidgetEntryView : View {
                 Text("\(entry.score)")
                     .font(.system(size: 52, weight: .bold))
                     .foregroundColor(.white)
-                
+
                 Text(mood(for: entry.score))
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(scoreColor(for: entry.score))

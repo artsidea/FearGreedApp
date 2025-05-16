@@ -80,10 +80,10 @@ struct VIXFetcher {
                   let lastPrice = quotes.close.last,
                   let vix = lastPrice else {
                 throw URLError(.cannotParseResponse)
-            }
+                }
             return vix
-        } catch {
-            print("Decoding error: \(error)")
+            } catch {
+                print("Decoding error: \(error)")
             throw error
         }
     }

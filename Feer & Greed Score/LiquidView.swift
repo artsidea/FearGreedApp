@@ -5,6 +5,7 @@ struct LiquidView: View {
     @ObservedObject private var motion = MotionManager.shared
     let score: Int
     let color: Color
+    let marketType: MarketType
     
     @StateObject private var sceneHolder = SceneHolder()
     let viewHeight: CGFloat = UIScreen.main.bounds.height * 0.6
@@ -21,13 +22,19 @@ struct LiquidView: View {
                 }
                 let dropletCount = max(1, score * 4)
                 sceneHolder.scene.updateDropletCount(dropletCount)
+                sceneHolder.scene.showScore(score)
+                sceneHolder.scene.updateMarketType(marketType)
             }
-            .onChange(of: motion.gravity) { _ in
+            .onChange(of: motion.gravity) {
                 sceneHolder.scene.setGravity(dx: motion.gravity.x * 6, dy: motion.gravity.y * 6)
             }
-            .onChange(of: score) { newScore in
-                let dropletCount = max(1, newScore * 4)
+            .onChange(of: score) {
+                let dropletCount = max(1, score * 4)
                 sceneHolder.scene.updateDropletCount(dropletCount)
+                sceneHolder.scene.showScore(score)
+            }
+            .onChange(of: marketType) {
+                sceneHolder.scene.updateMarketType(marketType)
             }
     }
 }
@@ -36,7 +43,7 @@ class SceneHolder: ObservableObject {
     @Published var scene: LiquidScene
     init() {
         let initialDropletCount = 1
-        self.scene = LiquidScene(dropletCount: initialDropletCount)
+        self.scene = LiquidScene(dropletCount: initialDropletCount, marketType: .stock)
         self.scene.size = .zero // 실제 크기는 onAppear에서 지정
         self.scene.scaleMode = .resizeFill
     }
