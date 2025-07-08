@@ -37,10 +37,10 @@ struct ShadowText: UIViewRepresentable {
 
 enum MarketType: String, CaseIterable {
     case stock = "Stock"
-    case coin = "Coin"
+    case crypto = "Crypto"
 }
 
-struct CoinFearGreed: Decodable {
+struct CryptoFearGreed: Decodable {
     struct Data: Decodable {
         let value: String
         let value_classification: String
@@ -61,12 +61,14 @@ struct ContentView: View {
     @State private var scoreRect: CGRect = .zero
     @ObservedObject private var motion = MotionManager.shared
     @State private var selectedMarket: MarketType = .stock
-    @State private var coinMood: String = ""
+    @State private var cryptoMood: String = ""
     @State private var isTransitioning = false
     @State private var previousMarket: MarketType = .stock
     @State private var currentMarket: MarketType = .stock
     @State private var currentScore: Int = 0
-    @State private var currentCoinMood: String = ""
+    @State private var currentCryptoMood: String = ""
+    @State private var dragOffset: CGFloat = 0
+    @State private var lastCryptoUpdate: Date? = nil
     
     // VIX 공식 업데이트 시각 (매일 오전 7시, 한국 시간)
     private var nextVIXUpdate: Date {
@@ -131,43 +133,52 @@ struct ContentView: View {
                 .allowsHitTesting(false)
                 
                 // 파티클 효과
-                LiquidView(score: currentScore, color: currentMarket == .stock ? scoreColor : coinColor, marketType: currentMarket)
+                LiquidView(score: currentScore, color: currentMarket == .stock ? scoreColor : cryptoColor, marketType: currentMarket, scoreOffsetX: 0)
                     .zIndex(2)
-                
-                // 상단 고정 토글
-                Picker("Market", selection: $selectedMarket) {
-                    ForEach(MarketType.allCases, id: \.self) { type in
-                        Text(type.rawValue)
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-                .frame(width: geo.size.width * 0.8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.9))
-                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                )
-                .disabled(isTransitioning)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, -400)
-                .zIndex(20)
                 
                 // 하단 안내 (카운트다운 + 업데이트 시각)
                 VStack {
                     Spacer()
-                    if currentMarket == .coin {
-                        Text("COIN FEAR & GREED: \(currentScore) (\(currentCoinMood))")
+                    // 화살표 버튼(중앙, 하단 텍스트 위)
+                    Button(action: {
+                        if !isTransitioning {
+                            let next: MarketType = (selectedMarket == .stock) ? .crypto : .stock
+                            selectedMarket = next
+                        }
+                    }) {
+                        Image(systemName: selectedMarket == .stock ? "chevron.right.circle.fill" : "chevron.left.circle.fill")
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(Color(.sRGB, white: 0.12, opacity: 0.85))
+                            .shadow(radius: 4)
+                            .padding(.bottom, 8)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    // 안내 텍스트
+                    if currentMarket == .crypto {
+                        Text("CRYPTO FEAR & GREED: \(currentScore) (\(currentCryptoMood))")
                             .font(.caption)
                             .foregroundColor(.black)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        if let last = lastCryptoUpdate {
+                            Text("LAST UPDATED: \(last.formatted(date: .abbreviated, time: .standard))")
+                                .font(.caption2)
+                                .foregroundColor(.black.opacity(0.7))
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.bottom, height * 0.04)
+                        } else {
+                            Text("")
+                                .padding(.bottom, height * 0.04)
+                        }
                     } else {
-                        Text("VIX: \(String(format: "%.2f", VIXFetcher.shared.getLastVIXValue()))")
+                        Text("STOCK FEAR & GREED: \(currentScore)")
                             .font(.caption)
                             .foregroundColor(.black)
+                            .frame(maxWidth: .infinity, alignment: .center)
                         Text("NEXT UPDATE IN: \(timeLeftString) (\(nextVIXUpdate.formatted(date: .omitted, time: .shortened)))")
                             .font(.caption)
                             .foregroundColor(.black)
+                            .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.bottom, height * 0.04)
                     }
                 }
@@ -202,15 +213,13 @@ struct ContentView: View {
                     }
                 }
             }
-            .onChange(of: selectedMarket) { newValue in
+            .onChange(of: selectedMarket) { oldValue, newValue in
                 guard newValue != previousMarket else { return }
                 previousMarket = newValue
-                
                 // 전환 시작 (검은색으로 fade out)
                 withAnimation(.easeOut(duration: 0.2)) {
                     isTransitioning = true
                 }
-                
                 // 검은색이 완전히 화면을 덮은 후에 데이터를 가져오고 컨텐츠를 업데이트
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     Task {
@@ -220,25 +229,26 @@ struct ContentView: View {
                                 await MainActor.run {
                                     currentScore = sentiment.finalScore
                                     currentMarket = newValue
-                                    currentCoinMood = ""
+                                    currentCryptoMood = ""
                                     let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
                                     userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
                                     isLoading = false
+                                    lastCryptoUpdate = nil
                                 }
                             } else {
                                 let url = URL(string: "https://api.alternative.me/fng/")!
                                 let (data, _) = try await URLSession.shared.data(from: url)
-                                let decoded = try JSONDecoder().decode(CoinFearGreed.self, from: data)
+                                let decoded = try JSONDecoder().decode(CryptoFearGreed.self, from: data)
                                 let value = Int(decoded.data.first?.value ?? "50") ?? 50
                                 let mood = decoded.data.first?.value_classification ?? ""
                                 await MainActor.run {
                                     currentScore = value
                                     currentMarket = newValue
-                                    currentCoinMood = mood
+                                    currentCryptoMood = mood
                                     isLoading = false
+                                    lastCryptoUpdate = Date()
                                 }
                             }
-                            
                             // 데이터 업데이트 후 검은색 오버레이 제거
                             await MainActor.run {
                                 withAnimation(.easeIn(duration: 0.2)) {
@@ -268,7 +278,7 @@ struct ContentView: View {
         }
     }
     
-    private var coinColor: Color {
+    private var cryptoColor: Color {
         switch score {
         case 0..<20: return .purple // Extreme Fear
         case 20..<45: return Color(red: 110/255, green: 60/255, blue: 200/255) // Fear (보라+파랑 느낌)
@@ -290,19 +300,20 @@ struct ContentView: View {
                         let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
                         userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
                         self.isLoading = false
-                        self.coinMood = ""
+                        self.cryptoMood = ""
                     }
                 } else {
                     // 코인 공포/탐욕 지수 fetch
                     let url = URL(string: "https://api.alternative.me/fng/")!
                     let (data, _) = try await URLSession.shared.data(from: url)
-                    let decoded = try JSONDecoder().decode(CoinFearGreed.self, from: data)
+                    let decoded = try JSONDecoder().decode(CryptoFearGreed.self, from: data)
                     let value = Int(decoded.data.first?.value ?? "50") ?? 50
                     let mood = decoded.data.first?.value_classification ?? ""
-                await MainActor.run {
+                    await MainActor.run {
                         self.score = value
-                        self.coinMood = mood
-                    self.isLoading = false
+                        self.cryptoMood = mood
+                        self.isLoading = false
+                        self.lastCryptoUpdate = Date()
                     }
                 }
             } catch {

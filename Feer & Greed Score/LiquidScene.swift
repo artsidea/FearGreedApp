@@ -11,6 +11,7 @@ class LiquidScene: SKScene {
     private var scoreLabel: SKLabelNode?
     private var marketType: MarketType
     private var baseColor: UIColor
+    var scoreOffsetX: CGFloat = 0
     
     // 그라데이션 색상 정의
     private var colors: [(UIColor, CGFloat)] {
@@ -24,8 +25,8 @@ class LiquidScene: SKScene {
                 (.systemGreen, 0.55),   // Fear
                 (.systemBlue, 0.75)     // Extreme Fear (아래쪽)
             ]
-        case .coin:
-            // Coin 모드 색상
+        case .crypto:
+            // Crypto 모드 색상
             return [
                 (.systemMint, 0.0),     // Extreme Greed (위쪽)
                 (.systemCyan, 0.2),     // Greed
@@ -127,10 +128,15 @@ class LiquidScene: SKScene {
             let (color2, pos2) = colors[i+1]
             if y >= pos1 && y <= pos2 {
                 let t = (y - pos1) / (pos2 - pos1)
-                return interpolateColor(from: color1, to: color2, t: t)
+                var color = interpolateColor(from: color1, to: color2, t: t)
+                // 아래로 갈수록 아주 미세하게 어둡게
+                color = color.darker(by: y * 0.08) // 0~0.08 정도만 어둡게
+                return color
             }
         }
-        return colors.last?.0 ?? .systemBlue
+        // 마지막 색상도 어둡게 보정
+        let base = colors.last?.0 ?? .systemBlue
+        return base.darker(by: y * 0.08)
     }
     
     private func createParticles() {
@@ -257,7 +263,7 @@ class LiquidScene: SKScene {
         
         // 라벨 기본 설정
         let fontSize = min(size.width, size.height) * 0.44
-        let center = CGPoint(x: size.width/2, y: size.height/2)
+        let center = CGPoint(x: size.width/2 + scoreOffsetX, y: size.height/2)
         let text = "\(score)"
         
         // 1. 그라데이션 텍스처 생성
@@ -338,5 +344,14 @@ class LiquidScene: SKScene {
         if let scoreLabel = scoreLabel, let scoreText = scoreLabel.text, let score = Int(scoreText) {
             showScore(score)
         }
+    }
+}
+
+// UIColor extension 추가
+extension UIColor {
+    func darker(by amount: CGFloat) -> UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        self.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return UIColor(red: max(r - amount, 0), green: max(g - amount, 0), blue: max(b - amount, 0), alpha: a)
     }
 } 

@@ -125,13 +125,16 @@ struct Quote: Codable {
     let close: [Double?]
 }
 
-// MARK: - CNN Fear & Greed Index 근사치 계산
+// MARK: - CNN Fear & Greed Index 근사치 계산 (6개 지표)
 struct MarketSentimentScore {
     let sp500MomentumScore: Int
     let vixScore: Int
     let bondScore: Int
+    let putCallScore: Int
+    let junkScore: Int
+    let highLowScore: Int
     var finalScore: Int {
-        (sp500MomentumScore + vixScore + bondScore) / 3
+        (sp500MomentumScore + vixScore + bondScore + putCallScore + junkScore + highLowScore) / 6
     }
 }
 
@@ -182,15 +185,86 @@ extension VIXFetcher {
         let score = Int(normalized * 100)
         return score
     }
-    // 통합 점수 fetch 및 계산
+    // (1) Put/Call Ratio Fetcher (CBOE, 실제 데이터)
+    func fetchPutCallRatio() async throws -> Double {
+        let urlString = "https://cdn.cboe.com/api/global/delayed_quotes/put_call_ratios/all.csv"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        guard let csv = String(data: data, encoding: .utf8) else { throw URLError(.cannotParseResponse) }
+        if let line = csv.components(separatedBy: "\n").first(where: { $0.contains("TOTAL") }),
+           let valueString = line.components(separatedBy: ",").last,
+           let value = Double(valueString) {
+            return value
+        }
+        throw URLError(.cannotParseResponse)
+    }
+    func calculatePutCallScore(ratio: Double) -> Int {
+        let capped = min(max(ratio, 0.7), 1.2)
+        let normalized = (1.2 - capped) / (1.2 - 0.7)
+        return Int(normalized * 100)
+    }
+
+    // (2) 정크본드 스프레드 Fetcher (FRED, 실제 데이터)
+    func fetchJunkBondSpread() async throws -> Double {
+        let urlString = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        guard let csv = String(data: data, encoding: .utf8) else { throw URLError(.cannotParseResponse) }
+        let lines = csv.components(separatedBy: "\n").reversed()
+        for line in lines {
+            let comps = line.components(separatedBy: ",")
+            if comps.count == 2, let value = Double(comps[1]) {
+                return value
+            }
+        }
+        throw URLError(.cannotParseResponse)
+    }
+    func calculateJunkBondScore(spread: Double) -> Int {
+        let capped = min(max(spread, 2), 8)
+        let normalized = (8 - capped) / (8 - 2)
+        return Int(normalized * 100)
+    }
+
+    // (3) S&P500 52주 high/low fetch (대체, 예시)
+    func fetchSP500HighLow() async throws -> (Double, Double) {
+        let urlString = "https://query1.finance.yahoo.com/v8/finance/chart/^GSPC?range=1y&interval=1d"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(YahooFinanceResponse.self, from: data)
+        guard let quote = response.chart.result.first?.indicators?.quote.first else { throw URLError(.cannotParseResponse) }
+        let closes = quote.close.compactMap { $0 }
+        guard let high = closes.max(), let low = closes.min() else { throw URLError(.cannotParseResponse) }
+        return (high, low)
+    }
+    func calculateHighLowScore(current: Double, high: Double, low: Double) -> Int {
+        guard high > low else { return 50 }
+        let normalized = (current - low) / (high - low)
+        return Int(normalized * 100)
+    }
+
+    // (NEW) 통합 점수 fetch 및 계산 (6개 지표, 오류에 강인하게)
     func fetchAndCalculateMarketSentiment() async throws -> MarketSentimentScore {
-        async let sp500Prices = fetchSP500Prices()
-        async let vixValue = fetchVIXValue()
-        async let bond10Y = fetchBond10YValue()
-        let (prices, vix, bond) = try await (sp500Prices, vixValue, bond10Y)
-        let sp500Score = calculateSP500MomentumScore(prices: prices)
+        let sp500Prices = (try? await fetchSP500Prices()) ?? Array(repeating: 0.0, count: 125)
+        let vix = (try? await fetchVIXValue()) ?? 20.0
+        let bond10Y = (try? await fetchBond10YValue()) ?? 4.0
+        let putCall = (try? await fetchPutCallRatio()) ?? 0.95
+        let junkSpread = (try? await fetchJunkBondSpread()) ?? 3.5
+        let (spHigh, spLow) = (try? await fetchSP500HighLow()) ?? (4800.0, 3600.0)
+
+        let sp500MomentumScore = calculateSP500MomentumScore(prices: sp500Prices)
         let vixScore = calculateVIXScore(vix: vix)
-        let bondScore = calculateBondScore(bond10Y: bond)
-        return MarketSentimentScore(sp500MomentumScore: sp500Score, vixScore: vixScore, bondScore: bondScore)
+        let bondScore = calculateBondScore(bond10Y: bond10Y)
+        let putCallScore = calculatePutCallScore(ratio: putCall)
+        let junkScore = calculateJunkBondScore(spread: junkSpread)
+        let highLowScore = calculateHighLowScore(current: sp500Prices.last ?? 0, high: spHigh, low: spLow)
+
+        return MarketSentimentScore(
+            sp500MomentumScore: sp500MomentumScore,
+            vixScore: vixScore,
+            bondScore: bondScore,
+            putCallScore: putCallScore,
+            junkScore: junkScore,
+            highLowScore: highLowScore
+        )
     }
 }

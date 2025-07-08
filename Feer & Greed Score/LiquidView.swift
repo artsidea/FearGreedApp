@@ -6,6 +6,7 @@ struct LiquidView: View {
     let score: Int
     let color: Color
     let marketType: MarketType
+    let scoreOffsetX: CGFloat
     
     @StateObject private var sceneHolder = SceneHolder()
     let viewHeight: CGFloat = UIScreen.main.bounds.height * 0.6
@@ -22,19 +23,25 @@ struct LiquidView: View {
                 }
                 let dropletCount = max(1, score * 4)
                 sceneHolder.scene.updateDropletCount(dropletCount)
+                sceneHolder.scene.scoreOffsetX = scoreOffsetX
                 sceneHolder.scene.showScore(score)
                 sceneHolder.scene.updateMarketType(marketType)
             }
-            .onChange(of: motion.gravity) {
-                sceneHolder.scene.setGravity(dx: motion.gravity.x * 6, dy: motion.gravity.y * 6)
+            .onChange(of: motion.gravity) { oldValue, newValue in
+                sceneHolder.scene.setGravity(dx: newValue.x * 6, dy: newValue.y * 6)
             }
-            .onChange(of: score) {
-                let dropletCount = max(1, score * 4)
+            .onChange(of: score) { oldValue, newValue in
+                let dropletCount = max(1, newValue * 4)
                 sceneHolder.scene.updateDropletCount(dropletCount)
-                sceneHolder.scene.showScore(score)
+                sceneHolder.scene.scoreOffsetX = scoreOffsetX
+                sceneHolder.scene.showScore(newValue)
             }
-            .onChange(of: marketType) {
-                sceneHolder.scene.updateMarketType(marketType)
+            .onChange(of: marketType) { oldValue, newValue in
+                sceneHolder.scene.updateMarketType(newValue)
+            }
+            .onChange(of: scoreOffsetX) { oldValue, newValue in
+                sceneHolder.scene.scoreOffsetX = newValue
+                sceneHolder.scene.showScore(score)
             }
     }
 }

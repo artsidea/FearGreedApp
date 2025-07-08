@@ -23,7 +23,7 @@ struct FearGreedWidget: Widget {
             FearGreedWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Fear & Greed Score")
-        .description("Today’s market mood based on VIX")
+        .description("Today's market mood based on VIX or Crypto")
         .supportedFamilies([.systemSmall])
     }
 }

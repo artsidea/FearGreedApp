@@ -54,17 +54,19 @@ struct FearGreedWidgetEntryView : View {
         ZStack {
             Color.black
             VStack(spacing: 8) {
-                Text("Fear & Greed")
-                    .font(.system(size: 14, weight: .medium))
+                Text("Stock market")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
                 
+                // 점수(Score)는 흰색, ultraLight, 64pt
                 Text("\(entry.score)")
-                    .font(.system(size: 52, weight: .bold))
+                    .font(.system(size: 64, weight: .light))
                     .foregroundColor(.white)
-
+                
+                // Mood 텍스트: 12pt, 구간별 색상
                 Text(mood(for: entry.score))
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(scoreColor(for: entry.score))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(moodColor(for: entry.score))
             }
             .padding()
         }
@@ -92,14 +94,16 @@ struct FearGreedWidgetEntryView : View {
         default: return "Extreme Greed"
         }
     }
-}
 
-struct MarketSentimentScore {
-    let sp500MomentumScore: Int
-    let vixScore: Int
-    let bondScore: Int
-
-    var finalScore: Int {
-        return (sp500MomentumScore + vixScore + bondScore) / 3
+    // Mood별 색상 지정 함수 추가
+    func moodColor(for score: Int) -> Color {
+        switch score {
+        case 0...24: return .red // Extreme Fear
+        case 25...49: return .orange // Fear
+        case 50...59: return .green // Neutral
+        case 60...74: return .blue // Greed
+        case 75...100: return .purple // Extreme Greed
+        default: return .white
+        }
     }
 }
