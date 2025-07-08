@@ -1,6 +1,7 @@
 import SpriteKit
+import UIKit
 
-class LiquidScene: SKScene {
+class LiquidScene: SKScene, SKPhysicsContactDelegate {
     private var particles: [SKShapeNode] = []
     private var particleCount: Int
     private let particleSize: CGFloat = 30
@@ -51,6 +52,7 @@ class LiquidScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .clear
         physicsWorld.gravity = CGVector(dx: 0, dy: -12)
+        physicsWorld.contactDelegate = self // contact delegate 지정
 
         // 기존 벽 노드가 있으면 제거
         self.childNode(withName: "border")?.removeFromParent()
@@ -66,6 +68,7 @@ class LiquidScene: SKScene {
         border.physicsBody = SKPhysicsBody(bodies: [left, right, bottom])
         border.physicsBody?.categoryBitMask = 2
         border.physicsBody?.isDynamic = false
+        border.physicsBody?.contactTestBitMask = 1 // 파티클과 contact 발생
         addChild(border)
 
         createParticles()
@@ -90,6 +93,7 @@ class LiquidScene: SKScene {
         border.physicsBody = SKPhysicsBody(bodies: [left, right, bottom])
         border.physicsBody?.categoryBitMask = 2
         border.physicsBody?.isDynamic = false
+        border.physicsBody?.contactTestBitMask = 1 // 파티클과 contact 발생
         addChild(border)
     }
     
@@ -171,7 +175,7 @@ class LiquidScene: SKScene {
                 particle.physicsBody?.mass = 0.005
             particle.physicsBody?.categoryBitMask = 1
             particle.physicsBody?.collisionBitMask = 1 | 2
-            particle.physicsBody?.contactTestBitMask = 0
+            particle.physicsBody?.contactTestBitMask = 2 // 바닥과 contact 발생
                 self.addChild(particle)
                 self.particles.append(particle)
                 created += 1
@@ -345,6 +349,16 @@ class LiquidScene: SKScene {
             showScore(score)
         }
     }
+    
+    // SKPhysicsContactDelegate 구현: 바닥과 파티클 충돌 시 진동
+    func didBegin(_ contact: SKPhysicsContact) {
+        let maskA = contact.bodyA.categoryBitMask
+        let maskB = contact.bodyB.categoryBitMask
+        // 파티클(1)과 바닥(2)이 충돌할 때
+        if (maskA == 1 && maskB == 2) || (maskA == 2 && maskB == 1) {
+            triggerHaptic()
+        }
+    }
 }
 
 // UIColor extension 추가
@@ -354,4 +368,9 @@ extension UIColor {
         self.getRed(&r, green: &g, blue: &b, alpha: &a)
         return UIColor(red: max(r - amount, 0), green: max(g - amount, 0), blue: max(b - amount, 0), alpha: a)
     }
+} 
+
+func triggerHaptic() {
+    let generator = UIImpactFeedbackGenerator(style: .medium)
+    generator.impactOccurred()
 } 
