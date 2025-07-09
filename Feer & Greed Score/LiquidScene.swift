@@ -14,6 +14,10 @@ class LiquidScene: SKScene, SKPhysicsContactDelegate {
     private var baseColor: UIColor
     var scoreOffsetX: CGFloat = 0
     
+    // 바닥에 닿은 파티클 개수 추적
+    private var particlesOnGround: Int = 0
+    private let maxParticlesForHaptic = 100 // 최대 100개 기준
+    
     // 그라데이션 색상 정의
     private var colors: [(UIColor, CGFloat)] {
         switch marketType {
@@ -348,6 +352,8 @@ class LiquidScene: SKScene, SKPhysicsContactDelegate {
         if let scoreLabel = scoreLabel, let scoreText = scoreLabel.text, let score = Int(scoreText) {
             showScore(score)
         }
+        // 마켓 변경 시 햅틱 카운트 리셋
+        particlesOnGround = 0
     }
     
     // SKPhysicsContactDelegate 구현: 바닥과 파티클 충돌 시 진동
@@ -356,8 +362,26 @@ class LiquidScene: SKScene, SKPhysicsContactDelegate {
         let maskB = contact.bodyB.categoryBitMask
         // 파티클(1)과 바닥(2)이 충돌할 때
         if (maskA == 1 && maskB == 2) || (maskA == 2 && maskB == 1) {
-            triggerHaptic()
+            particlesOnGround += 1
+            triggerHaptic(for: particlesOnGround)
         }
+    }
+    
+    // 파티클이 바닥에서 떨어질 때 카운트 감소
+    func didEnd(_ contact: SKPhysicsContact) {
+        let maskA = contact.bodyA.categoryBitMask
+        let maskB = contact.bodyB.categoryBitMask
+        if (maskA == 1 && maskB == 2) || (maskA == 2 && maskB == 1) {
+            particlesOnGround = max(0, particlesOnGround - 1)
+        }
+    }
+    
+    func triggerHaptic(for count: Int) {
+        // 강도: 0.1 ~ 0.7 사이로 보정 (10%~70%)
+        let intensity = min(0.7, max(0.1, Double(count) / Double(maxParticlesForHaptic)))
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        generator.impactOccurred(intensity: CGFloat(intensity))
     }
 }
 
@@ -368,9 +392,4 @@ extension UIColor {
         self.getRed(&r, green: &g, blue: &b, alpha: &a)
         return UIColor(red: max(r - amount, 0), green: max(g - amount, 0), blue: max(b - amount, 0), alpha: a)
     }
-} 
-
-func triggerHaptic() {
-    let generator = UIImpactFeedbackGenerator(style: .medium)
-    generator.impactOccurred()
 } 
