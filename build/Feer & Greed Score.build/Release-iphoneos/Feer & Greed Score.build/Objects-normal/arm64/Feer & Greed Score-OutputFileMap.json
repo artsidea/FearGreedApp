@@ -1,0 +1,50 @@
+{
+  "" : {
+    "const-values" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master.swiftconstvalues",
+    "dependencies" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master.d",
+    "diagnostics" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master.dia",
+    "emit-module-dependencies" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master-emit-module.dia",
+    "swift-dependencies" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearAndGreedScore-master.swiftdeps"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/ContentView_new.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/ContentView_new.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/ContentView_new.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/ContentView_new.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/FearGreedApp.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearGreedApp.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearGreedApp.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/FearGreedApp.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/LiquidScene.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidScene.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidScene.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidScene.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/LiquidView.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidView.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidView.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/LiquidView.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/MotionManager.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/MotionManager.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/MotionManager.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/MotionManager.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/VIXFetcher.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXFetcher.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXFetcher.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXFetcher.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/FearAndGreedScore/VIXScoreCalculator.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXScoreCalculator.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXScoreCalculator.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/VIXScoreCalculator.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/FearAndGreedScore/build/FearAndGreedScore.build/Release-iphoneos/FearAndGreedScore.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  }
+}

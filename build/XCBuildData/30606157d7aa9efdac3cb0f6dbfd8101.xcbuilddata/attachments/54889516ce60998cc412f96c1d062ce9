@@ -1,0 +1,35 @@
+{
+  "" : {
+    "const-values" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master.swiftconstvalues",
+    "dependencies" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master.d",
+    "diagnostics" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master.dia",
+    "emit-module-dependencies" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master-emit-module.dia",
+    "swift-dependencies" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetExtension-master.swiftdeps"
+  },
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/FearGreedWidget/FearGreedWidget.swift" : {
+    "index-unit-output-path" : "/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidget.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidget.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidget.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/FearGreedWidget/FearGreedWidgetBundle.swift" : {
+    "index-unit-output-path" : "/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetBundle.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetBundle.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetBundle.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/FearGreedWidget/FearGreedWidgetControl.swift" : {
+    "index-unit-output-path" : "/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetControl.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetControl.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetControl.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/FearGreedWidget/FearGreedWidgetLiveActivity.swift" : {
+    "index-unit-output-path" : "/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetLiveActivity.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetLiveActivity.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/FearGreedWidgetLiveActivity.o"
+  },
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/FearGreedWidgetExtension.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  }
+}

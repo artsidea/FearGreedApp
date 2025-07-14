@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'Feer & Greed Score' in project 'Feer & Greed Score'
+➜ Explicit dependency on target 'FearGreedWidgetExtension' in project 'Feer & Greed Score'
+Target 'FearGreedWidgetExtension' in project 'Feer & Greed Score' (no dependencies)

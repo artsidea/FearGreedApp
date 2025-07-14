@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Feer & Greed Score
+//  FearAndGreedScore
 //
 //  Created by hyujang on 5/11/25.
 //

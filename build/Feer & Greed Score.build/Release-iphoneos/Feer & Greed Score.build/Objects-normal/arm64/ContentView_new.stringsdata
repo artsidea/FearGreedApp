@@ -1,0 +1,48 @@
+{
+  "source": "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/ContentView_new.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "CRYPTO FEAR & GREED: %lld (%@)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "LAST UPDATED: %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 164
+        }
+      },
+      {
+        "comment": "",
+        "key": "STOCK FEAR & GREED: %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEXT UPDATE IN: %@ (%@)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 178
+        }
+      }
+    ]
+  },
+  "version": 1
+}

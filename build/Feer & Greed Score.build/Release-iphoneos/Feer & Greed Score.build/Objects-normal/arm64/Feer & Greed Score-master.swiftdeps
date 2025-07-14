@@ -1,0 +1,14 @@
+version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
+options: "6043d39ec20de0a7bed78f28388c0254fe58860d79eff05cba695e1593905a10"
+build_start_time: [1751946503, 358802000]
+build_end_time: [1751946505, 857653000]
+inputs:
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/ContentView_new.swift": [1751926272, 755055564]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/FearGreedApp.swift": [1747113444, 461112857]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/LiquidScene.swift": [1747375685, 97311854]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/LiquidView.swift": [1747376175, 154451251]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/MotionManager.swift": [1747075916, 49050331]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/VIXFetcher.swift": [1751926582, 102811268]
+  "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/Feer & Greed Score/VIXScoreCalculator.swift": [1747154628, 763373613]
+  ? "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Feer & Greed Score.build/Release-iphoneos/Feer & Greed Score.build/DerivedSources/GeneratedAssetSymbols.swift"
+  : [1751946503, 345438873]
