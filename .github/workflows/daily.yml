@@ -88,6 +88,8 @@ jobs:
                 const vixCapped = cap(vix, 10, 45);
                 // CNN formula: (45 - capped_vix) / 35 * 100
                 vixScore = Math.round(((45 - vixCapped) / 35) * 100);
+                // Ensure score is within 0-100 range
+                vixScore = Math.max(0, Math.min(100, vixScore));
               }
             }
 
@@ -107,6 +109,7 @@ jobs:
                 const momentumCapped = cap(momentum, -0.1, 0.1);
                 // CNN formula: ((momentum + 0.1) / 0.2) * 100
                 momentumScore = Math.round(((momentumCapped + 0.1) / 0.2) * 100);
+                momentumScore = Math.max(0, Math.min(100, momentumScore));
               }
             }
 
@@ -125,6 +128,7 @@ jobs:
                 const performanceCapped = cap(relativePerformance, -0.2, 0.2);
                 // CNN formula: ((relative_performance + 0.2) / 0.4) * 100
                 safeHavenScore = Math.round(((performanceCapped + 0.2) / 0.4) * 100);
+                safeHavenScore = Math.max(0, Math.min(100, safeHavenScore));
               }
             }
 
@@ -141,6 +145,7 @@ jobs:
                 const pCapped = cap(putCall, 0.7, 1.2);
                 // CNN formula: ((1.2 - ratio) / 0.5) * 100
                 putCallScore = Math.round(((1.2 - pCapped) / 0.5) * 100);
+                putCallScore = Math.max(0, Math.min(100, putCallScore));
               }
             } catch {
               try {
@@ -151,6 +156,7 @@ jobs:
                   putCall = v;
                   const pCapped = cap(putCall, 0.7, 1.2);
                   putCallScore = Math.round(((1.2 - pCapped) / 0.5) * 100);
+                  putCallScore = Math.max(0, Math.min(100, putCallScore));
                 }
               } catch {}
             }
@@ -169,6 +175,7 @@ jobs:
                   const jCapped = cap(junkSpread, 2, 8);
                   // CNN formula: ((8 - spread) / 6) * 100
                   junkScore = Math.round(((8 - jCapped) / 6) * 100);
+                  junkScore = Math.max(0, Math.min(100, junkScore));
                   break;
                 }
               }
@@ -188,6 +195,7 @@ jobs:
                 const breadthNorm = (currentSP - spLow) / (spHigh - spLow);
                 // CNN formula: ((current - low) / (high - low)) * 100
                 breadthScore = Math.round(clamp01(breadthNorm) * 100);
+                breadthScore = Math.max(0, Math.min(100, breadthScore));
               }
             }
 
@@ -204,6 +212,7 @@ jobs:
                 const volumeCapped = cap(volumeRatio, 0.5, 2.0);
                 // CNN formula: (1 - ((volume_ratio - 0.5) / 1.5)) * 100
                 volumeScore = Math.round((1 - ((volumeCapped - 0.5) / 1.5)) * 100);
+                volumeScore = Math.max(0, Math.min(100, volumeScore));
               }
             }
 
