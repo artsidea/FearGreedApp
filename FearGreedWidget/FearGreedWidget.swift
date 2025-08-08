@@ -30,22 +30,49 @@ struct Provider: TimelineProvider {
     }
     
     func placeholder(in context: Context) -> FearGreedEntry {
-        FearGreedEntry(date: Date(), score: userDefaults?.integer(forKey: vixScoreKey) ?? 57)
+        let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+        return FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FearGreedEntry) -> Void) {
-        let entry = FearGreedEntry(date: Date(), score: userDefaults?.integer(forKey: vixScoreKey) ?? 57)
+        let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+        let entry = FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FearGreedEntry>) -> Void) {
         Task {
-            var score = userDefaults?.integer(forKey: vixScoreKey) ?? 57
-            if let fetched = try? await fetchCentralScore() {
-                score = fetched
-                // 위젯에서도 최신 점수를 앱 그룹에 업데이트하여 일관성 유지
-                userDefaults?.set(score, forKey: vixScoreKey)
-                userDefaults?.set(Date(), forKey: lastUpdateKey)
+            var score = 50 // 기본값을 50으로 설정
+            var fetchedScore: Int?
+            
+            // 실제 데이터를 가져오기 시도
+            do {
+                fetchedScore = try await fetchCentralScore()
+                if let fetched = fetchedScore {
+                    score = fetched
+                    // 위젯에서도 최신 점수를 앱 그룹에 업데이트하여 일관성 유지
+                    userDefaults?.set(score, forKey: vixScoreKey)
+                    userDefaults?.set(Date(), forKey: lastUpdateKey)
+                    print("Widget: Fetched score \(score) from central JSON")
+                } else {
+                    // 캐시된 데이터가 있으면 사용
+                    let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+                    if cachedScore > 0 {
+                        score = cachedScore
+                        print("Widget: Using cached score \(score)")
+                    } else {
+                        print("Widget: No data available, using default score \(score)")
+                    }
+                }
+            } catch {
+                // 에러 발생 시 캐시된 데이터 사용
+                let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+                if cachedScore > 0 {
+                    score = cachedScore
+                    print("Widget: Error fetching data, using cached score \(score)")
+                } else {
+                    print("Widget: Error fetching data and no cache, using default score \(score)")
+                }
             }
 
             let entry = FearGreedEntry(date: Date(), score: score)
@@ -63,7 +90,15 @@ struct Provider: TimelineProvider {
     }
 
     private func fetchCentralScore() async throws -> Int {
-        let (data, _) = try await URLSession.shared.data(from: centralDailyURL)
+        let (data, response) = try await URLSession.shared.data(from: centralDailyURL)
+        
+        // HTTP 응답 상태 확인
+        if let httpResponse = response as? HTTPURLResponse {
+            guard httpResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+        }
+        
         let payload = try JSONDecoder().decode(DailyPayload.self, from: data)
         return payload.scores.finalScore
     }
