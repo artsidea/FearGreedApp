@@ -221,8 +221,11 @@ extension VIXFetcher {
         guard let latest = prices.last, prices.count >= 125 else { return 50 }
         let ma125 = prices.reduce(0, +) / Double(prices.count)
         let momentum = (latest - ma125) / ma125
-        let score = min(max((momentum * 5 + 0.5) * 100, 0), 100)
-        return Int(score)
+        // CNN-style: momentum -0.1 to +0.1 range, higher = more greed
+        let momentumCapped = min(max(momentum, -0.1), 0.1)
+        // CNN formula: ((momentum + 0.1) / 0.2) * 100
+        let score = Int(round(((momentumCapped + 0.1) / 0.2) * 100))
+        return max(0, min(100, score))
     }
     // VIX 점수 (공포/탐욕)
     func calculateVIXScore(vix: Double) -> Int {
@@ -296,30 +299,85 @@ extension VIXFetcher {
         return Int(normalized * 100)
     }
 
-    // (NEW) 통합 점수 fetch 및 계산 (6개 지표, 오류에 강인하게)
+    // Safe Haven Score (15% weight) - Stocks vs Bonds performance (3-month)
+    func fetchSafeHavenScore() async throws -> Int {
+        let sp3mURL = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=3mo&interval=1d"
+        let tlt3mURL = "https://query1.finance.yahoo.com/v8/finance/chart/TLT?range=3mo&interval=1d"
+        
+        guard let spURL = URL(string: sp3mURL), let tltURL = URL(string: tlt3mURL) else {
+            throw URLError(.badURL)
+        }
+        
+        async let spData = URLSession.shared.data(from: spURL)
+        async let tltData = URLSession.shared.data(from: tltURL)
+        
+        let (spResponse, tltResponse) = try await (spData, tltData)
+        
+        let spChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: spResponse.0)
+        let tltChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: tltResponse.0)
+        
+        guard let spCloses = spChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              let tltCloses = tltChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              spCloses.count > 0, tltCloses.count > 0 else {
+            throw URLError(.cannotParseResponse)
+        }
+        
+        let spReturn = (spCloses.last! - spCloses.first!) / spCloses.first!
+        let tltReturn = (tltCloses.last! - tltCloses.first!) / tltCloses.first!
+        let relativePerformance = spReturn - tltReturn
+        
+        // CNN-style: -20% to +20% range, stocks outperforming = greed
+        let performanceCapped = min(max(relativePerformance, -0.2), 0.2)
+        // CNN formula: ((relative_performance + 0.2) / 0.4) * 100
+        let score = Int(round(((performanceCapped + 0.2) / 0.4) * 100))
+        return max(0, min(100, score))
+    }
+
+    // Market Volume Score (5% weight) - Volume relative to average
+    func fetchVolumeScore() async throws -> Int {
+        let urlString = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1mo&interval=1d"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(YahooFinanceResponse.self, from: data)
+        guard let quote = response.chart.result.first?.indicators?.quote.first else { throw URLError(.cannotParseResponse) }
+        let volumes = quote.volume.compactMap { $0 }
+        guard volumes.count > 0 else { throw URLError(.cannotParseResponse) }
+        
+        let currentVolume = volumes.last!
+        let avgVolume = volumes.reduce(0, +) / Double(volumes.count)
+        let volumeRatio = currentVolume / avgVolume
+        
+        // CNN-style: 0.5-2.0x range, lower = more greed
+        let volumeCapped = min(max(volumeRatio, 0.5), 2.0)
+        // CNN formula: (1 - ((volume_ratio - 0.5) / 1.5)) * 100
+        let score = Int(round((1 - ((volumeCapped - 0.5) / 1.5)) * 100))
+        return max(0, min(100, score))
+    }
+
+    // (NEW) 통합 점수 fetch 및 계산 (7개 지표, CNN 스타일)
     func fetchAndCalculateMarketSentiment() async throws -> MarketSentimentScore {
         let sp500Prices = (try? await fetchSP500Prices()) ?? Array(repeating: 0.0, count: 125)
         let vix = (try? await fetchVIXValue()) ?? 20.0
-        let bond10Y = (try? await fetchBond10YValue()) ?? 4.0
         let putCall = (try? await fetchPutCallRatio()) ?? 0.95
         let junkSpread = (try? await fetchJunkBondSpread()) ?? 3.5
         let (spHigh, spLow) = (try? await fetchSP500HighLow()) ?? (4800.0, 3600.0)
 
         let sp500MomentumScore = calculateSP500MomentumScore(prices: sp500Prices)
         let vixScore = calculateVIXScore(vix: vix)
-        let bondScore = calculateBondScore(bond10Y: bond10Y)
+        let safeHavenScore = (try? await fetchSafeHavenScore()) ?? 50
         let putCallScore = calculatePutCallScore(ratio: putCall)
         let junkScore = calculateJunkBondScore(spread: junkSpread)
         let highLowScore = calculateHighLowScore(current: sp500Prices.last ?? 0, high: spHigh, low: spLow)
+        let volumeScore = (try? await fetchVolumeScore()) ?? 50
 
         return MarketSentimentScore(
             vixScore: vixScore,
             momentumScore: sp500MomentumScore,
-            safeHavenScore: bondScore,
+            safeHavenScore: safeHavenScore,
             putCallScore: putCallScore,
             junkScore: junkScore,
-            breadthScore: highLowScore, // 실제 계산된 값 사용
-            volumeScore: 50 // Placeholder, needs actual data
+            breadthScore: highLowScore,
+            volumeScore: volumeScore
         )
     }
 }
