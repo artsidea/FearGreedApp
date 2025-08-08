@@ -53,6 +53,27 @@ jobs:
           }
           function cap(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
           function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+          
+          // CNN-style percentile calculation
+          function calculatePercentile(value, historicalValues) {
+            if (historicalValues.length === 0) return 50;
+            const sorted = [...historicalValues].sort((a, b) => a - b);
+            const index = sorted.findIndex(v => v >= value);
+            if (index === -1) return 100;
+            if (index === 0) return 0;
+            return (index / sorted.length) * 100;
+          }
+          
+          // CNN-style smoothing (7-day EMA)
+          function smoothScore(currentScore, previousScores = []) {
+            if (previousScores.length === 0) return currentScore;
+            const alpha = 2 / (7 + 1); // 7-day EMA
+            let smoothed = currentScore;
+            for (let i = previousScores.length - 1; i >= 0; i--) {
+              smoothed = alpha * previousScores[i] + (1 - alpha) * smoothed;
+            }
+            return Math.round(smoothed);
+          }
 
           const DEFAULTS = {
             vix: 20.0,
@@ -69,158 +90,203 @@ jobs:
           };
 
           (async () => {
-            const vixJson = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d');
+            // 1. VIX (25% weight) - CNN uses VIX as primary fear indicator
+            const vixJson = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1y');
             let vix = DEFAULTS.vix;
-            if (vixJson) {
-              const vixCloses = vixJson.chart.result[0].indicators.quote[0].close;
-              vix = lastNonNull(vixCloses) ?? DEFAULTS.vix;
-            }
-
-            const sp6m = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=6mo&interval=1d');
-            let currentSP = DEFAULTS.currentSP;
-            let ma125 = DEFAULTS.ma125;
-            if (sp6m) {
-              const sp6mCloses = sp6m.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-              const last125 = sp6mCloses.slice(-125);
-              if (last125.length > 0) {
-                currentSP = last125[last125.length-1] ?? DEFAULTS.currentSP;
-                ma125 = last125.reduce((a,b)=>a+b,0) / last125.length;
+            let vixScore = 50;
+            if (vixJson && vixJson.chart && vixJson.chart.result && vixJson.chart.result[0]) {
+              const vixCloses = vixJson.chart.result[0].indicators.quote[0].close.filter(v => v != null);
+              if (vixCloses.length > 0) {
+                vix = vixCloses[vixCloses.length - 1];
+                // CNN-style: VIX 10-45 range, lower = more greed
+                const vixCapped = cap(vix, 10, 45);
+                const vixNorm = (45 - vixCapped) / (45 - 10);
+                vixScore = Math.round(vixNorm * 100);
               }
             }
 
-            const tnx = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1mo&interval=1d');
-            let bond10Y = DEFAULTS.bond10Y;
-            if (tnx) {
-              const tnxCloses = tnx.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-              bond10Y = tnxCloses[tnxCloses.length-1] ?? DEFAULTS.bond10Y;
+            // 2. S&P500 Momentum (20% weight) - 125-day moving average
+            const sp6m = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=6mo&interval=1d');
+            let currentSP = DEFAULTS.currentSP;
+            let ma125 = DEFAULTS.ma125;
+            let momentumScore = 50;
+            if (sp6m && sp6m.chart && sp6m.chart.result && sp6m.chart.result[0]) {
+              const sp6mCloses = sp6m.chart.result[0].indicators.quote[0].close.filter(v => v != null);
+              if (sp6mCloses.length >= 125) {
+                const last125 = sp6mCloses.slice(-125);
+                currentSP = last125[last125.length - 1];
+                ma125 = last125.reduce((a, b) => a + b, 0) / last125.length;
+                const momentum = (currentSP - ma125) / ma125;
+                // CNN-style: momentum -0.1 to +0.1 range, capped
+                const momentumCapped = cap(momentum, -0.1, 0.1);
+                const momentumNorm = (momentumCapped + 0.1) / 0.2;
+                momentumScore = Math.round(momentumNorm * 100);
+              }
             }
 
-            // Put/Call Ratio: use Yahoo Finance ^CPC (fallback ^CPCE) to avoid CBOE 403
-            async function fetchPutCallFromYahoo() {
-              try {
-                const cpc = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5ECPC?range=1mo&interval=1d');
-                const closes = cpc.chart.result[0].indicators.quote[0].close;
-                const v = lastNonNull(closes);
-                if (v != null) return v;
-              } catch {}
+            // 3. Safe Haven Demand (15% weight) - Stocks vs Bonds performance (3-month)
+            const sp3m = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=3mo&interval=1d');
+            const tlt3m = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/TLT?range=3mo&interval=1d');
+            let safeHavenScore = 50;
+            if (sp3m && tlt3m && sp3m.chart && tlt3m.chart && sp3m.chart.result && tlt3m.chart.result) {
+              const spCloses = sp3m.chart.result[0].indicators.quote[0].close.filter(v => v != null);
+              const tltCloses = tlt3m.chart.result[0].indicators.quote[0].close.filter(v => v != null);
+              if (spCloses.length > 0 && tltCloses.length > 0) {
+                const spReturn = (spCloses[spCloses.length - 1] - spCloses[0]) / spCloses[0];
+                const tltReturn = (tltCloses[tltCloses.length - 1] - tltCloses[0]) / tltCloses[0];
+                const relativePerformance = spReturn - tltReturn;
+                // CNN-style: bonds outperforming stocks = fear, stocks outperforming = greed
+                const performanceCapped = cap(relativePerformance, -0.2, 0.2);
+                const performanceNorm = (performanceCapped + 0.2) / 0.4;
+                safeHavenScore = Math.round(performanceNorm * 100);
+              }
+            }
+
+            // 4. Put/Call Ratio (15% weight) - Market sentiment
+            let putCallScore = 50;
+            let putCall = DEFAULTS.putCall;
+            try {
+              const cpc = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5ECPC?range=1mo&interval=1d');
+              const closes = cpc.chart.result[0].indicators.quote[0].close;
+              const v = lastNonNull(closes);
+              if (v != null) {
+                putCall = v;
+                // CNN-style: 0.7-1.2 range, higher = more fear
+                const pCapped = cap(putCall, 0.7, 1.2);
+                const pNorm = (1.2 - pCapped) / (1.2 - 0.7);
+                putCallScore = Math.round(pNorm * 100);
+              }
+            } catch {
               try {
                 const cpce = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5ECPCE?range=1mo&interval=1d');
                 const closes = cpce.chart.result[0].indicators.quote[0].close;
                 const v = lastNonNull(closes);
-                if (v != null) return v;
+                if (v != null) {
+                  putCall = v;
+                  const pCapped = cap(putCall, 0.7, 1.2);
+                  const pNorm = (1.2 - pCapped) / (1.2 - 0.7);
+                  putCallScore = Math.round(pNorm * 100);
+                }
               } catch {}
-              return 0.95; // conservative fallback
             }
-            const putCall = await fetchPutCallFromYahoo();
 
+            // 5. Junk Bond Demand (10% weight) - High-yield bond spread
             const fredCsv = await safeText('https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2');
+            let junkScore = 50;
             let junkSpread = DEFAULTS.junk;
             if (fredCsv) {
               const fredLines = fredCsv.trim().split('\n').slice(1);
               for (let i = fredLines.length - 1; i >= 0; i--) {
                 const val = parseFloat(fredLines[i].split(',')[1]);
-                if (!Number.isNaN(val)) { junkSpread = val; break; }
+                if (!Number.isNaN(val)) {
+                  junkSpread = val;
+                  // CNN-style: 2-8 range, lower = more greed
+                  const jCapped = cap(junkSpread, 2, 8);
+                  const jNorm = (8 - jCapped) / (8 - 2);
+                  junkScore = Math.round(jNorm * 100);
+                  break;
+                }
               }
             }
 
+            // 6. Market Breadth (10% weight) - New highs vs new lows
             const sp1y = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1y&interval=1d');
+            let breadthScore = 50;
             let spHigh = DEFAULTS.spHigh;
-            let spLow  = DEFAULTS.spLow;
-            if (sp1y) {
-              const sp1yCloses = sp1y.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+            let spLow = DEFAULTS.spLow;
+            if (sp1y && sp1y.chart && sp1y.chart.result && sp1y.chart.result[0]) {
+              const sp1yCloses = sp1y.chart.result[0].indicators.quote[0].close.filter(v => v != null);
               if (sp1yCloses.length > 0) {
                 spHigh = Math.max(...sp1yCloses);
-                spLow  = Math.min(...sp1yCloses);
+                spLow = Math.min(...sp1yCloses);
+                // CNN-style: position within 52-week range
+                const breadthNorm = (currentSP - spLow) / (spHigh - spLow);
+                breadthScore = Math.round(clamp01(breadthNorm) * 100);
               }
             }
 
-            // 7) USD DXY (Dollar Index Futures) 1y for strength/weakness
-            const dxy = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/DX=F?range=1y&interval=1d');
-            let usdCurrent = DEFAULTS.usdCurrent, usdHigh = DEFAULTS.usdHigh, usdLow = DEFAULTS.usdLow;
-            if (dxy) {
-              const dxyCloses = dxy.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-              if (dxyCloses.length > 0) {
-                usdCurrent = dxyCloses[dxyCloses.length-1] ?? DEFAULTS.usdCurrent;
-                usdHigh = Math.max(...dxyCloses);
-                usdLow  = Math.min(...dxyCloses);
+            // 7. Market Volume (5% weight) - Volume relative to average
+            const spVolume = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1mo&interval=1d');
+            let volumeScore = 50;
+            if (spVolume && spVolume.chart && spVolume.chart.result && spVolume.chart.result[0]) {
+              const volumes = spVolume.chart.result[0].indicators.quote[0].volume.filter(v => v != null);
+              if (volumes.length > 0) {
+                const currentVolume = volumes[volumes.length - 1];
+                const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
+                const volumeRatio = currentVolume / avgVolume;
+                // CNN-style: higher volume = more fear (panic selling/buying)
+                const volumeCapped = cap(volumeRatio, 0.5, 2.0);
+                const volumeNorm = (volumeCapped - 0.5) / 1.5;
+                volumeScore = Math.round((1 - volumeNorm) * 100); // Invert: higher volume = lower score
               }
             }
 
-            const momentum = (currentSP - ma125) / ma125;
-            const sp500MomentumScore = Math.round(Math.max(0, Math.min(100, (momentum * 5 + 0.5) * 100)));
-
-            const vixCapped = cap(vix, 10, 45);
-            const vixNorm = (45 - vixCapped) / (45 - 10);
-            const vixScore = Math.round(Math.sqrt((vixNorm * 100) * 100));
-
-            const bCapped = cap(bond10Y, 1, 5);
-            const bondScore = Math.round(((bCapped - 1) / (5 - 1)) * 100);
-
-            const pCapped = cap(putCall, 0.7, 1.2);
-            const putCallScore = Math.round(((1.2 - pCapped) / (1.2 - 0.7)) * 100);
-
-            const jCapped = cap(junkSpread, 2, 8);
-            const junkScore = Math.round(((8 - jCapped) / (8 - 2)) * 100);
-
-            const denomHL = (spHigh - spLow);
-            const highLowScore = Math.round(clamp01(denomHL !== 0 ? (currentSP - spLow) / denomHL : 0.5) * 100);
-
-            // USD score: stronger USD -> more fear (invert position)
-            const denomUsd = (usdHigh - usdLow);
-            const usdNorm = clamp01(denomUsd !== 0 ? (usdCurrent - usdLow) / denomUsd : 0.5);
-            const usdScore = Math.round((1 - usdNorm) * 100);
-
+            // Calculate weighted final score (CNN-style weights)
             const finalScore = Math.round(
-              (sp500MomentumScore + vixScore + bondScore + putCallScore + junkScore + highLowScore + usdScore) / 7
+              (vixScore * 0.25) +
+              (momentumScore * 0.20) +
+              (safeHavenScore * 0.15) +
+              (putCallScore * 0.15) +
+              (junkScore * 0.10) +
+              (breadthScore * 0.10) +
+              (volumeScore * 0.05)
             );
 
             const asOf = new Date().toISOString().slice(0,10);
             const out = {
               asOf,
-              metrics: { vix, currentSP, ma125, bond10Y, putCall, junkSpread, spHigh, spLow, usdDxy: usdCurrent, usdHigh, usdLow },
-              scores: { sp500MomentumScore, vixScore, bondScore, putCallScore, junkScore, highLowScore, usdScore, finalScore }
+              metrics: { 
+                vix, 
+                currentSP, 
+                ma125, 
+                bond10Y: DEFAULTS.bond10Y, // Keep for reference
+                putCall, 
+                junkSpread, 
+                spHigh, 
+                spLow, 
+                usdDxy: DEFAULTS.usdCurrent // Keep for reference
+              },
+              scores: { 
+                vixScore, 
+                momentumScore, 
+                safeHavenScore, 
+                putCallScore, 
+                junkScore, 
+                breadthScore, 
+                volumeScore, 
+                finalScore 
+              }
             };
 
             fs.mkdirSync('docs', { recursive: true });
             fs.writeFileSync('docs/daily.json', JSON.stringify(out, null, 2));
-            console.log('Wrote docs/daily.json');
+            console.log('Wrote docs/daily.json with CNN-style calculation');
           })().catch(e => {
             console.error('Fetch pipeline failed, writing fallback daily.json', e);
-            const vix = DEFAULTS.vix;
-            const currentSP = DEFAULTS.currentSP;
-            const ma125 = DEFAULTS.ma125;
-            const bond10Y = DEFAULTS.bond10Y;
-            const putCall = DEFAULTS.putCall;
-            const junkSpread = DEFAULTS.junk;
-            const spHigh = DEFAULTS.spHigh;
-            const spLow = DEFAULTS.spLow;
-            const usdCurrent = DEFAULTS.usdCurrent;
-            const usdHigh = DEFAULTS.usdHigh;
-            const usdLow = DEFAULTS.usdLow;
-
-            const momentum = (currentSP - ma125) / ma125;
-            const sp500MomentumScore = Math.round(Math.max(0, Math.min(100, (momentum * 5 + 0.5) * 100)));
-            const vixCapped = cap(vix, 10, 45);
-            const vixNorm = (45 - vixCapped) / (45 - 10);
-            const vixScore = Math.round(Math.sqrt((vixNorm * 100) * 100));
-            const bCapped = cap(bond10Y, 1, 5);
-            const bondScore = Math.round(((bCapped - 1) / (5 - 1)) * 100);
-            const pCapped = cap(putCall, 0.7, 1.2);
-            const putCallScore = Math.round(((1.2 - pCapped) / (1.2 - 0.7)) * 100);
-            const jCapped = cap(junkSpread, 2, 8);
-            const junkScore = Math.round(((8 - jCapped) / (8 - 2)) * 100);
-            const denomHL = (spHigh - spLow);
-            const highLowScore = Math.round(clamp01(denomHL !== 0 ? (currentSP - spLow) / denomHL : 0.5) * 100);
-            const denomUsd = (usdHigh - usdLow);
-            const usdNorm = clamp01(denomUsd !== 0 ? (usdCurrent - usdLow) / denomUsd : 0.5);
-            const usdScore = Math.round((1 - usdNorm) * 100);
-            const finalScore = Math.round((sp500MomentumScore + vixScore + bondScore + putCallScore + junkScore + highLowScore + usdScore) / 7);
-
             const asOf = new Date().toISOString().slice(0,10);
             const out = {
               asOf,
-              metrics: { vix, currentSP, ma125, bond10Y, putCall, junkSpread, spHigh, spLow, usdDxy: usdCurrent, usdHigh, usdLow },
-              scores: { sp500MomentumScore, vixScore, bondScore, putCallScore, junkScore, highLowScore, usdScore, finalScore }
+              metrics: { 
+                vix: DEFAULTS.vix, 
+                currentSP: DEFAULTS.currentSP, 
+                ma125: DEFAULTS.ma125, 
+                bond10Y: DEFAULTS.bond10Y,
+                putCall: DEFAULTS.putCall, 
+                junkSpread: DEFAULTS.junk, 
+                spHigh: DEFAULTS.spHigh, 
+                spLow: DEFAULTS.spLow, 
+                usdDxy: DEFAULTS.usdCurrent
+              },
+              scores: { 
+                vixScore: 50, 
+                momentumScore: 50, 
+                safeHavenScore: 50, 
+                putCallScore: 50, 
+                junkScore: 50, 
+                breadthScore: 50, 
+                volumeScore: 50, 
+                finalScore: 50 
+              }
             };
             fs.mkdirSync('docs', { recursive: true });
             fs.writeFileSync('docs/daily.json', JSON.stringify(out, null, 2));
@@ -236,7 +302,7 @@ jobs:
         uses: EndBug/add-and-commit@v9
         with:
           add: 'docs/daily.json'
-          message: 'chore: update daily sentiment'
+          message: 'chore: update daily sentiment with CNN-style calculation'
           default_author: github_actions
 
 

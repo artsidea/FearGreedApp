@@ -12,7 +12,7 @@ struct VIXFetcher {
     private let baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX"
     // 중앙 수집 JSON(URL)을 사용해 모든 사용자가 동일 데이터를 보도록 함
     // 실제 GitHub Pages URL로 교체 필요: https://<GITHUB_USERNAME>.github.io/<REPO_NAME>/daily.json
-    private let centralDailyURLString = "https://<GITHUB_USERNAME>.github.io/<REPO_NAME>/daily.json"
+    private let centralDailyURLString = "https://artsidea.github.io/FearGreedApp/daily.json"
     private let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed") ?? UserDefaults.standard
     private let lastUpdateKey = "lastVIXUpdate"
     private let vixValueKey = "lastVIXValue"
@@ -131,28 +131,40 @@ struct Quote: Codable {
 // 중앙 수집 JSON 디코딩 모델
 struct DailySentimentPayload: Codable {
     struct Scores: Codable {
-        let sp500MomentumScore: Int
         let vixScore: Int
-        let bondScore: Int
+        let momentumScore: Int
+        let safeHavenScore: Int
         let putCallScore: Int
         let junkScore: Int
-        let highLowScore: Int
+        let breadthScore: Int
+        let volumeScore: Int
         let finalScore: Int
     }
     let asOf: String
+    let metrics: [String: Double]?
     let scores: Scores
 }
 
-// MARK: - CNN Fear & Greed Index 근사치 계산 (6개 지표)
+// MARK: - CNN Fear & Greed Index 근사치 계산 (7개 지표, 가중치 적용)
 struct MarketSentimentScore {
-    let sp500MomentumScore: Int
     let vixScore: Int
-    let bondScore: Int
+    let momentumScore: Int
+    let safeHavenScore: Int
     let putCallScore: Int
     let junkScore: Int
-    let highLowScore: Int
+    let breadthScore: Int
+    let volumeScore: Int
     var finalScore: Int {
-        (sp500MomentumScore + vixScore + bondScore + putCallScore + junkScore + highLowScore) / 6
+        // CNN-style weighted average
+        return Int(round(
+            Double(vixScore) * 0.25 +
+            Double(momentumScore) * 0.20 +
+            Double(safeHavenScore) * 0.15 +
+            Double(putCallScore) * 0.15 +
+            Double(junkScore) * 0.10 +
+            Double(breadthScore) * 0.10 +
+            Double(volumeScore) * 0.05
+        ))
     }
 }
 
@@ -170,12 +182,13 @@ extension VIXFetcher {
         userDefaults.set(payload.scores.finalScore, forKey: vixScoreKey)
 
         return MarketSentimentScore(
-            sp500MomentumScore: payload.scores.sp500MomentumScore,
             vixScore: payload.scores.vixScore,
-            bondScore: payload.scores.bondScore,
+            momentumScore: payload.scores.momentumScore,
+            safeHavenScore: payload.scores.safeHavenScore,
             putCallScore: payload.scores.putCallScore,
             junkScore: payload.scores.junkScore,
-            highLowScore: payload.scores.highLowScore
+            breadthScore: payload.scores.breadthScore,
+            volumeScore: payload.scores.volumeScore
         )
     }
 
@@ -299,12 +312,13 @@ extension VIXFetcher {
         let highLowScore = calculateHighLowScore(current: sp500Prices.last ?? 0, high: spHigh, low: spLow)
 
         return MarketSentimentScore(
-            sp500MomentumScore: sp500MomentumScore,
             vixScore: vixScore,
-            bondScore: bondScore,
+            momentumScore: sp500MomentumScore,
+            safeHavenScore: bondScore,
             putCallScore: putCallScore,
             junkScore: junkScore,
-            highLowScore: highLowScore
+            breadthScore: 50, // Placeholder, needs actual data
+            volumeScore: 50 // Placeholder, needs actual data
         )
     }
 }
