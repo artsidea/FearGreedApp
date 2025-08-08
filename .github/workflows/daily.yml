@@ -1,0 +1,123 @@
+name: Build daily sentiment
+
+on:
+  schedule:
+    - cron: '0 22 * * *' # 07:00 KST
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Ensure dirs
+        run: mkdir -p docs scripts
+
+      - name: Write fetch script
+        run: |
+          cat > scripts/fetch_daily.js <<'EOF'
+          const fs = require('fs');
+
+          async function fetchJSON(url, headers={}) {
+            const res = await fetch(url, { headers });
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+            return res.json();
+          }
+          async function fetchText(url, headers={}) {
+            const res = await fetch(url, { headers });
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+            return res.text();
+          }
+          function lastNonNull(arr) {
+            for (let i = arr.length - 1; i >= 0; i--) {
+              if (arr[i] != null) return arr[i];
+            }
+            return null;
+          }
+          function cap(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+          (async () => {
+            const vixJson = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d');
+            const vixCloses = vixJson.chart.result[0].indicators.quote[0].close;
+            const vix = lastNonNull(vixCloses);
+
+            const sp6m = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=6mo&interval=1d');
+            const sp6mCloses = sp6m.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+            const last125 = sp6mCloses.slice(-125);
+            const currentSP = last125[last125.length-1];
+            const ma125 = last125.reduce((a,b)=>a+b,0) / last125.length;
+
+            const tnx = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1mo&interval=1d');
+            const tnxCloses = tnx.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+            const bond10Y = tnxCloses[tnxCloses.length-1];
+
+            const pcrCsv = await fetchText('https://cdn.cboe.com/api/global/delayed_quotes/put_call_ratios/all.csv', {
+              'User-Agent': 'Mozilla/5.0'
+            });
+            const pcrLine = pcrCsv.split('\n').find(l => l.includes('TOTAL'));
+            const putCall = parseFloat(pcrLine.split(',').pop());
+
+            const fredCsv = await fetchText('https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2');
+            const fredLines = fredCsv.trim().split('\n').slice(1);
+            let junkSpread = null;
+            for (let i = fredLines.length - 1; i >= 0; i--) {
+              const val = parseFloat(fredLines[i].split(',')[1]);
+              if (!Number.isNaN(val)) { junkSpread = val; break; }
+            }
+
+            const sp1y = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1y&interval=1d');
+            const sp1yCloses = sp1y.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+            const spHigh = Math.max(...sp1yCloses);
+            const spLow  = Math.min(...sp1yCloses);
+
+            const momentum = (currentSP - ma125) / ma125;
+            const sp500MomentumScore = Math.round(Math.max(0, Math.min(100, (momentum * 5 + 0.5) * 100)));
+
+            const vixCapped = cap(vix, 10, 45);
+            const vixNorm = (45 - vixCapped) / (45 - 10);
+            const vixScore = Math.round(Math.sqrt((vixNorm * 100) * 100));
+
+            const bCapped = cap(bond10Y, 1, 5);
+            const bondScore = Math.round(((bCapped - 1) / (5 - 1)) * 100);
+
+            const pCapped = cap(putCall, 0.7, 1.2);
+            const putCallScore = Math.round(((1.2 - pCapped) / (1.2 - 0.7)) * 100);
+
+            const jCapped = cap(junkSpread, 2, 8);
+            const junkScore = Math.round(((8 - jCapped) / (8 - 2)) * 100);
+
+            const highLowScore = Math.round(((currentSP - spLow) / (spHigh - spLow)) * 100);
+
+            const finalScore = Math.round(
+              (sp500MomentumScore + vixScore + bondScore + putCallScore + junkScore + highLowScore) / 6
+            );
+
+            const asOf = new Date().toISOString().slice(0,10);
+            const out = {
+              asOf,
+              metrics: { vix, currentSP, ma125, bond10Y, putCall, junkSpread, spHigh, spLow },
+              scores: { sp500MomentumScore, vixScore, bondScore, putCallScore, junkScore, highLowScore, finalScore }
+            };
+
+            fs.mkdirSync('docs', { recursive: true });
+            fs.writeFileSync('docs/daily.json', JSON.stringify(out, null, 2));
+            console.log('Wrote docs/daily.json');
+          })().catch(e => { console.error(e); process.exit(1); });
+          EOF
+
+      - name: Build daily.json
+        run: node scripts/fetch_daily.js
+
+      - name: Commit and push
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'docs/daily.json'
+          message: 'chore: update daily sentiment'
+          default_author: github_actions
+
+

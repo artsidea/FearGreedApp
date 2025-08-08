@@ -1,0 +1,23 @@
+{
+  "asOf": "1970-01-01",
+  "metrics": {
+    "vix": 20,
+    "currentSP": 5000,
+    "ma125": 4950,
+    "bond10Y": 4.0,
+    "putCall": 0.95,
+    "junkSpread": 3.5,
+    "spHigh": 5200,
+    "spLow": 4200
+  },
+  "scores": {
+    "sp500MomentumScore": 50,
+    "vixScore": 60,
+    "bondScore": 75,
+    "putCallScore": 50,
+    "junkScore": 60,
+    "highLowScore": 80,
+    "finalScore": 62
+  }
+}
+

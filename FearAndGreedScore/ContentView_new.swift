@@ -223,13 +223,16 @@ struct ContentView: View {
                 // 검은색이 완전히 화면을 덮은 후에 데이터를 가져오고 컨텐츠를 업데이트
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     Task {
+                        // 전환 타겟을 먼저 반영하여, 네트워크 실패 시에도 화면 전환 상태 유지
+                        await MainActor.run {
+                            currentMarket = newValue
+                            if newValue == .stock { currentCryptoMood = "" }
+                        }
                         do {
                             if newValue == .stock {
-                                let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
+                                let sentiment = try await VIXFetcher.shared.fetchFromGithubDaily()
                                 await MainActor.run {
                                     currentScore = sentiment.finalScore
-                                    currentMarket = newValue
-                                    currentCryptoMood = ""
                                     let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
                                     userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
                                     isLoading = false
@@ -243,7 +246,6 @@ struct ContentView: View {
                                 let mood = decoded.data.first?.value_classification ?? ""
                                 await MainActor.run {
                                     currentScore = value
-                                    currentMarket = newValue
                                     currentCryptoMood = mood
                                     isLoading = false
                                     lastCryptoUpdate = Date()
@@ -294,7 +296,7 @@ struct ContentView: View {
         Task {
             do {
                 if selectedMarket == .stock {
-                    let sentiment = try await VIXFetcher.shared.fetchAndCalculateMarketSentiment()
+                    let sentiment = try await VIXFetcher.shared.fetchFromGithubDaily()
                     await MainActor.run {
                         self.score = sentiment.finalScore
                         let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")

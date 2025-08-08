@@ -10,6 +10,9 @@ import Foundation
 struct VIXFetcher {
     static let shared = VIXFetcher()
     private let baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX"
+    // 중앙 수집 JSON(URL)을 사용해 모든 사용자가 동일 데이터를 보도록 함
+    // 실제 GitHub Pages URL로 교체 필요: https://<GITHUB_USERNAME>.github.io/<REPO_NAME>/daily.json
+    private let centralDailyURLString = "https://<GITHUB_USERNAME>.github.io/<REPO_NAME>/daily.json"
     private let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed") ?? UserDefaults.standard
     private let lastUpdateKey = "lastVIXUpdate"
     private let vixValueKey = "lastVIXValue"
@@ -125,6 +128,21 @@ struct Quote: Codable {
     let close: [Double?]
 }
 
+// 중앙 수집 JSON 디코딩 모델
+struct DailySentimentPayload: Codable {
+    struct Scores: Codable {
+        let sp500MomentumScore: Int
+        let vixScore: Int
+        let bondScore: Int
+        let putCallScore: Int
+        let junkScore: Int
+        let highLowScore: Int
+        let finalScore: Int
+    }
+    let asOf: String
+    let scores: Scores
+}
+
 // MARK: - CNN Fear & Greed Index 근사치 계산 (6개 지표)
 struct MarketSentimentScore {
     let sp500MomentumScore: Int
@@ -139,6 +157,28 @@ struct MarketSentimentScore {
 }
 
 extension VIXFetcher {
+    // 중앙 JSON에서 점수 가져오기 (GitHub Pages)
+    func fetchFromGithubDaily() async throws -> MarketSentimentScore {
+        guard let url = URL(string: centralDailyURLString), !centralDailyURLString.contains("<GITHUB_USERNAME>") else {
+            throw URLError(.badURL)
+        }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let payload = try JSONDecoder().decode(DailySentimentPayload.self, from: data)
+
+        // 일부 값은 기존 로컬 캐시에 저장 (위젯 공유 등)
+        userDefaults.set(Date(), forKey: lastUpdateKey)
+        userDefaults.set(payload.scores.finalScore, forKey: vixScoreKey)
+
+        return MarketSentimentScore(
+            sp500MomentumScore: payload.scores.sp500MomentumScore,
+            vixScore: payload.scores.vixScore,
+            bondScore: payload.scores.bondScore,
+            putCallScore: payload.scores.putCallScore,
+            junkScore: payload.scores.junkScore,
+            highLowScore: payload.scores.highLowScore
+        )
+    }
+
     // S&P500 125일치 종가 fetch
     func fetchSP500Prices() async throws -> [Double] {
         let urlString = "https://query1.finance.yahoo.com/v8/finance/chart/^GSPC?range=6mo&interval=1d"
