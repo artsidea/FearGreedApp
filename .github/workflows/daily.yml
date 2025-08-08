@@ -246,12 +246,12 @@ jobs:
                 vix, 
                 currentSP, 
                 ma125, 
-                bond10Y: DEFAULTS.bond10Y, // Keep for reference
+                bond10Y: DEFAULTS.bond10Y,
                 putCall, 
                 junkSpread, 
                 spHigh, 
                 spLow, 
-                usdDxy: DEFAULTS.usdCurrent // Keep for reference
+                usdDxy: DEFAULTS.usdCurrent
               },
               scores: { 
                 vixScore, 
