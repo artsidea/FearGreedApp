@@ -125,6 +125,7 @@ struct Indicators: Codable {
 
 struct Quote: Codable {
     let close: [Double?]
+    let volume: [Double?]?
 }
 
 // 중앙 수집 JSON 디코딩 모델
@@ -339,7 +340,8 @@ extension VIXFetcher {
         let (data, _) = try await URLSession.shared.data(from: url)
         let response = try JSONDecoder().decode(YahooFinanceResponse.self, from: data)
         guard let quote = response.chart.result.first?.indicators?.quote.first else { throw URLError(.cannotParseResponse) }
-        let volumes = quote.volume.compactMap { $0 }
+        guard let volumeData = quote.volume else { throw URLError(.cannotParseResponse) }
+        let volumes = volumeData.compactMap { $0 }
         guard volumes.count > 0 else { throw URLError(.cannotParseResponse) }
         
         let currentVolume = volumes.last!
