@@ -23,7 +23,9 @@ struct Provider: TimelineProvider {
     private let centralDailyURL = URL(string: "https://artsidea.github.io/FearGreedApp/daily.json")!
 
     struct DailyPayload: Decodable {
-        struct Scores: Decodable { let finalScore: Int }
+        struct Scores: Decodable { 
+            let finalScore: Int 
+        }
         let scores: Scores
     }
     

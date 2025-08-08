@@ -304,5 +304,6 @@ jobs:
           add: 'docs/daily.json'
           message: 'chore: update daily sentiment with CNN-style calculation'
           default_author: github_actions
+          pull: true
 
 
