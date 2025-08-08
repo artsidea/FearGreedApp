@@ -10,13 +10,13 @@
     "spLow": 4982.77001953125
   },
   "scores": {
-    "vixScore": 81,
-    "momentumScore": 89,
-    "safeHavenScore": 75,
+    "vixScore": 65,
+    "momentumScore": 70,
+    "safeHavenScore": 60,
     "putCallScore": 50,
-    "junkScore": 84,
-    "breadthScore": 96,
-    "volumeScore": 50,
-    "finalScore": 75
+    "junkScore": 75,
+    "breadthScore": 85,
+    "volumeScore": 45,
+    "finalScore": 55
   }
 }
