@@ -106,9 +106,10 @@ jobs:
                 vix = vixCloses[vixCloses.length - 1];
                 // CNN-style: VIX 10-45 range, lower = more greed, adjusted scaling
                 const vixCapped = cap(vix, 10, 45);
+                // CNN-style: VIX 10-45 range with more conservative scaling
                 const vixNorm = (45 - vixCapped) / (45 - 10);
-                // Apply CNN-style curve: more sensitive in middle range
-                vixScore = Math.round(Math.pow(vixNorm, 0.8) * 100);
+                // Apply CNN-style curve: more conservative for lower VIX values
+                vixScore = Math.round(Math.pow(vixNorm, 2.5) * 100);
               }
             }
 
