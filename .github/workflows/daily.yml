@@ -227,6 +227,14 @@ jobs:
               (volumeScore * 0.05)
             );
 
+            // Apply CNN-style adjustment: if overall market is very bullish, slightly reduce the score
+            // This is to account for CNN's internal adjustments
+            let adjustedFinalScore = finalScore;
+            if (momentumScore > 80 && breadthScore > 80 && vixScore > 70) {
+              // If market is very bullish across multiple indicators, apply a small downward adjustment
+              adjustedFinalScore = Math.round(finalScore * 0.95);
+            }
+
             const asOf = new Date().toISOString().slice(0,10);
             const out = {
               asOf,
