@@ -98,10 +98,10 @@ jobs:
               const vixCloses = vixJson.chart.result[0].indicators.quote[0].close.filter(v => v != null);
               if (vixCloses.length > 0) {
                 vix = vixCloses[vixCloses.length - 1];
-                // CNN-style: VIX 10-45 range, lower = more greed
+                // CNN-style: VIX 10-45 range, lower = more greed, with square root scaling
                 const vixCapped = cap(vix, 10, 45);
                 const vixNorm = (45 - vixCapped) / (45 - 10);
-                vixScore = Math.round(vixNorm * 100);
+                vixScore = Math.round(Math.sqrt(vixNorm * 100) * 10);
               }
             }
 
@@ -117,9 +117,9 @@ jobs:
                 currentSP = last125[last125.length - 1];
                 ma125 = last125.reduce((a, b) => a + b, 0) / last125.length;
                 const momentum = (currentSP - ma125) / ma125;
-                // CNN-style: momentum -0.1 to +0.1 range, capped
-                const momentumCapped = cap(momentum, -0.1, 0.1);
-                const momentumNorm = (momentumCapped + 0.1) / 0.2;
+                // CNN-style: momentum -0.15 to +0.15 range, capped (wider range)
+                const momentumCapped = cap(momentum, -0.15, 0.15);
+                const momentumNorm = (momentumCapped + 0.15) / 0.3;
                 momentumScore = Math.round(momentumNorm * 100);
               }
             }
@@ -136,8 +136,9 @@ jobs:
                 const tltReturn = (tltCloses[tltCloses.length - 1] - tltCloses[0]) / tltCloses[0];
                 const relativePerformance = spReturn - tltReturn;
                 // CNN-style: bonds outperforming stocks = fear, stocks outperforming = greed
-                const performanceCapped = cap(relativePerformance, -0.2, 0.2);
-                const performanceNorm = (performanceCapped + 0.2) / 0.4;
+                // Narrower range for more conservative calculation
+                const performanceCapped = cap(relativePerformance, -0.15, 0.15);
+                const performanceNorm = (performanceCapped + 0.15) / 0.3;
                 safeHavenScore = Math.round(performanceNorm * 100);
               }
             }
@@ -151,7 +152,7 @@ jobs:
               const v = lastNonNull(closes);
               if (v != null) {
                 putCall = v;
-                // CNN-style: 0.7-1.2 range, higher = more fear
+                // CNN-style: 0.7-1.2 range, higher = more fear, more conservative
                 const pCapped = cap(putCall, 0.7, 1.2);
                 const pNorm = (1.2 - pCapped) / (1.2 - 0.7);
                 putCallScore = Math.round(pNorm * 100);
@@ -180,7 +181,7 @@ jobs:
                 const val = parseFloat(fredLines[i].split(',')[1]);
                 if (!Number.isNaN(val)) {
                   junkSpread = val;
-                  // CNN-style: 2-8 range, lower = more greed
+                  // CNN-style: 2-8 range, lower = more greed, more conservative
                   const jCapped = cap(junkSpread, 2, 8);
                   const jNorm = (8 - jCapped) / (8 - 2);
                   junkScore = Math.round(jNorm * 100);
@@ -199,7 +200,7 @@ jobs:
               if (sp1yCloses.length > 0) {
                 spHigh = Math.max(...sp1yCloses);
                 spLow = Math.min(...sp1yCloses);
-                // CNN-style: position within 52-week range
+                // CNN-style: position within 52-week range, more conservative
                 const breadthNorm = (currentSP - spLow) / (spHigh - spLow);
                 breadthScore = Math.round(clamp01(breadthNorm) * 100);
               }
@@ -214,7 +215,7 @@ jobs:
                 const currentVolume = volumes[volumes.length - 1];
                 const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
                 const volumeRatio = currentVolume / avgVolume;
-                // CNN-style: higher volume = more fear (panic selling/buying)
+                // CNN-style: higher volume = more fear (panic selling/buying), more conservative
                 const volumeCapped = cap(volumeRatio, 0.5, 2.0);
                 const volumeNorm = (volumeCapped - 0.5) / 1.5;
                 volumeScore = Math.round((1 - volumeNorm) * 100); // Invert: higher volume = lower score
