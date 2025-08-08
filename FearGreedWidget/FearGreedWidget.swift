@@ -30,12 +30,12 @@ struct Provider: TimelineProvider {
     }
     
     func placeholder(in context: Context) -> FearGreedEntry {
-        let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+        let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
         return FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FearGreedEntry) -> Void) {
-        let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+        let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
         let entry = FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
         completion(entry)
     }
@@ -56,7 +56,7 @@ struct Provider: TimelineProvider {
                     print("Widget: Fetched score \(score) from central JSON")
                 } else {
                     // 캐시된 데이터가 있으면 사용
-                    let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+                    let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
                     if cachedScore > 0 {
                         score = cachedScore
                         print("Widget: Using cached score \(score)")
@@ -66,7 +66,7 @@ struct Provider: TimelineProvider {
                 }
             } catch {
                 // 에러 발생 시 캐시된 데이터 사용
-                let cachedScore = userDefaults?.integer(forKey: vixScoreKey)
+                let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
                 if cachedScore > 0 {
                     score = cachedScore
                     print("Widget: Error fetching data, using cached score \(score)")
