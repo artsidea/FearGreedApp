@@ -16,6 +16,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,27 +62,6 @@ jobs:
           }
           function cap(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
           function clamp01(x) { return Math.max(0, Math.min(1, x)); }
-          
-          // CNN-style percentile calculation
-          function calculatePercentile(value, historicalValues) {
-            if (historicalValues.length === 0) return 50;
-            const sorted = [...historicalValues].sort((a, b) => a - b);
-            const index = sorted.findIndex(v => v >= value);
-            if (index === -1) return 100;
-            if (index === 0) return 0;
-            return (index / sorted.length) * 100;
-          }
-          
-          // CNN-style smoothing (7-day EMA)
-          function smoothScore(currentScore, previousScores = []) {
-            if (previousScores.length === 0) return currentScore;
-            const alpha = 2 / (7 + 1); // 7-day EMA
-            let smoothed = currentScore;
-            for (let i = previousScores.length - 1; i >= 0; i--) {
-              smoothed = alpha * previousScores[i] + (1 - alpha) * smoothed;
-            }
-            return Math.round(smoothed);
-          }
 
           const DEFAULTS = {
             vix: 20.0,
@@ -92,9 +72,7 @@ jobs:
             junk: 3.5,
             spHigh: 5200,
             spLow: 4200,
-            usdCurrent: 103,
-            usdHigh: 110,
-            usdLow: 95
+            usdCurrent: 103
           };
 
           (async () => {
