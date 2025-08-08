@@ -362,6 +362,30 @@ jobs:
               }
             } catch {}
 
+            // 14. Dollar Strength Score (2% weight) - USD vs major currencies
+            let dollarScore = 50;
+            let usdDxy = DEFAULTS.usdCurrent;
+            try {
+              const dxyJson = await safeJSON('https://query1.finance.yahoo.com/v8/finance/chart/%5EDXY?range=1mo&interval=1d');
+              if (dxyJson && dxyJson.chart && dxyJson.chart.result && dxyJson.chart.result[0]) {
+                const dxyCloses = dxyJson.chart.result[0].indicators.quote[0].close.filter(v => v != null);
+                if (dxyCloses.length > 0) {
+                  usdDxy = dxyCloses[dxyCloses.length - 1];
+                  
+                  // 달러 강세/약세와 투자 심리의 관계:
+                  // 달러 약세 (낮은 DXY) = 투자자들이 위험자산 선호 = 탐욕
+                  // 달러 강세 (높은 DXY) = 투자자들이 안전자산 선호 = 공포
+                  
+                  // DXY 범위: 90-110 (일반적인 범위)
+                  const dxyCapped = cap(usdDxy, 90, 110);
+                  // CNN formula: (110 - capped_dxy) / 20 * 100
+                  // 낮은 DXY = 높은 점수 (탐욕), 높은 DXY = 낮은 점수 (공포)
+                  dollarScore = Math.round(((110 - dxyCapped) / 20) * 100);
+                  dollarScore = Math.max(0, Math.min(100, dollarScore));
+                }
+              }
+            } catch {}
+
             // Calculate weighted final score (13 indicators with updated weights)
             const finalScore = Math.round(
               (vixScore * 0.20) +
@@ -376,7 +400,8 @@ jobs:
               (sentimentScore * 0.04) +
               (technicalScore * 0.03) +
               (economicScore * 0.01) +
-              (globalScore * 0.01)
+              (globalScore * 0.01) +
+              (dollarScore * 0.02)
             );
 
             console.log('✅ 계산 완료! 최종 점수:', finalScore);
@@ -399,7 +424,8 @@ jobs:
                 sentiment: sentimentScore,
                 technical: technicalScore,
                 economic: economicScore,
-                global: globalScore
+                global: globalScore,
+                dollarStrength: dollarScore
               },
               scores: { 
                 vixScore, 
@@ -415,6 +441,7 @@ jobs:
                 technicalScore,
                 economicScore,
                 globalScore,
+                dollarStrength: dollarScore,
                 finalScore
               }
             };
@@ -442,7 +469,8 @@ jobs:
                 sentiment: 50,
                 technical: 50,
                 economic: 50,
-                global: 50
+                global: 50,
+                dollarStrength: 50
               },
               scores: { 
                 vixScore: 50, 
@@ -458,6 +486,7 @@ jobs:
                 technicalScore: 50,
                 economicScore: 50,
                 globalScore: 50,
+                dollarStrength: 50,
                 finalScore: 50 
               }
             };

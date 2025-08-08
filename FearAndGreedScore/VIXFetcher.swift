@@ -138,6 +138,12 @@ struct DailySentimentPayload: Codable {
         let junkScore: Int
         let breadthScore: Int
         let volumeScore: Int
+        let volatilityScore: Int?
+        let correlationScore: Int?
+        let sentimentScore: Int?
+        let technicalScore: Int?
+        let economicScore: Int?
+        let globalScore: Int?
         let finalScore: Int
     }
     let asOf: String
@@ -145,7 +151,7 @@ struct DailySentimentPayload: Codable {
     let scores: Scores
 }
 
-// MARK: - CNN Fear & Greed Index 근사치 계산 (7개 지표, 가중치 적용)
+// MARK: - CNN Fear & Greed Index 근사치 계산 (13개 지표, 가중치 적용)
 struct MarketSentimentScore {
     let vixScore: Int
     let momentumScore: Int
@@ -154,17 +160,51 @@ struct MarketSentimentScore {
     let junkScore: Int
     let breadthScore: Int
     let volumeScore: Int
+    let volatilityScore: Int
+    let correlationScore: Int
+    let sentimentScore: Int
+    let technicalScore: Int
+    let economicScore: Int
+    let globalScore: Int
+    
     var finalScore: Int {
-        // CNN-style weighted average
+        // CNN-style weighted average (13개 지표)
         return Int(round(
-            Double(vixScore) * 0.25 +
-            Double(momentumScore) * 0.20 +
-            Double(safeHavenScore) * 0.15 +
-            Double(putCallScore) * 0.15 +
-            Double(junkScore) * 0.10 +
-            Double(breadthScore) * 0.10 +
-            Double(volumeScore) * 0.05
+            Double(vixScore) * 0.20 +           // VIX (20%)
+            Double(momentumScore) * 0.15 +      // Momentum (15%)
+            Double(safeHavenScore) * 0.12 +     // Safe Haven (12%)
+            Double(putCallScore) * 0.10 +       // Put/Call Ratio (10%)
+            Double(junkScore) * 0.08 +          // Junk Bond Spread (8%)
+            Double(breadthScore) * 0.08 +       // Market Breadth (8%)
+            Double(volumeScore) * 0.05 +        // Volume (5%)
+            Double(volatilityScore) * 0.08 +    // Volatility (8%)
+            Double(correlationScore) * 0.05 +   // Correlation (5%)
+            Double(sentimentScore) * 0.04 +     // Sentiment (4%)
+            Double(technicalScore) * 0.03 +     // Technical (3%)
+            Double(economicScore) * 0.01 +      // Economic (1%)
+            Double(globalScore) * 0.01          // Global (1%)
         ))
+    }
+    
+    // 각 지표별 상태 설명
+    var vixStatus: String {
+        switch vixScore {
+        case 0..<25: return "극도의 공포"
+        case 25..<45: return "공포"
+        case 45..<55: return "중립"
+        case 55..<75: return "탐욕"
+        default: return "극도의 탐욕"
+        }
+    }
+    
+    var overallStatus: String {
+        switch finalScore {
+        case 0..<25: return "극도의 공포"
+        case 25..<45: return "공포"
+        case 45..<55: return "중립"
+        case 55..<75: return "탐욕"
+        default: return "극도의 탐욕"
+        }
     }
 }
 
@@ -188,7 +228,13 @@ extension VIXFetcher {
             putCallScore: payload.scores.putCallScore,
             junkScore: payload.scores.junkScore,
             breadthScore: payload.scores.breadthScore,
-            volumeScore: payload.scores.volumeScore
+            volumeScore: payload.scores.volumeScore,
+            volatilityScore: payload.scores.volatilityScore ?? 50,
+            correlationScore: payload.scores.correlationScore ?? 50,
+            sentimentScore: payload.scores.sentimentScore ?? 50,
+            technicalScore: payload.scores.technicalScore ?? 50,
+            economicScore: payload.scores.economicScore ?? 50,
+            globalScore: payload.scores.globalScore ?? 50
         )
     }
 
@@ -355,7 +401,180 @@ extension VIXFetcher {
         return max(0, min(100, score))
     }
 
-    // (NEW) 통합 점수 fetch 및 계산 (7개 지표, CNN 스타일)
+    // 8. Volatility Score (8% weight) - Historical volatility vs current
+    func fetchVolatilityScore() async throws -> Int {
+        let urlString = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=3mo&interval=1d"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(YahooFinanceResponse.self, from: data)
+        guard let quote = response.chart.result.first?.indicators?.quote.first else { throw URLError(.cannotParseResponse) }
+        let closes = quote.close.compactMap { $0 }
+        guard closes.count > 20 else { throw URLError(.cannotParseResponse) }
+        
+        // Calculate returns
+        var returns: [Double] = []
+        for i in 1..<closes.count {
+            returns.append((closes[i] - closes[i-1]) / closes[i-1])
+        }
+        
+        guard returns.count > 0 else { throw URLError(.cannotParseResponse) }
+        
+        // Calculate volatility (annualized)
+        let meanReturn = returns.reduce(0, +) / Double(returns.count)
+        let variance = returns.reduce(0) { sum, ret in
+            sum + pow(ret - meanReturn, 2)
+        } / Double(returns.count)
+        let volatility = sqrt(variance) * sqrt(252)
+        
+        // CNN-style: 0.1-0.4 range, lower = more greed
+        let volatilityCapped = min(max(volatility, 0.1), 0.4)
+        let score = Int(round((1 - ((volatilityCapped - 0.1) / 0.3)) * 100))
+        return max(0, min(100, score))
+    }
+
+    // 9. Correlation Score (5% weight) - Asset correlation breakdown
+    func fetchCorrelationScore() async throws -> Int {
+        let spURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1mo&interval=1d")!
+        let goldURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1mo&interval=1d")!
+        let bondURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1mo&interval=1d")!
+        
+        async let spData = URLSession.shared.data(from: spURL)
+        async let goldData = URLSession.shared.data(from: goldURL)
+        async let bondData = URLSession.shared.data(from: bondURL)
+        
+        let (spResponse, goldResponse, bondResponse) = try await (spData, goldData, bondData)
+        
+        let spChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: spResponse.0)
+        let goldChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: goldResponse.0)
+        let bondChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: bondResponse.0)
+        
+        guard let spCloses = spChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              let goldCloses = goldChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              let bondCloses = bondChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              spCloses.count > 10, goldCloses.count > 10, bondCloses.count > 10 else {
+            throw URLError(.cannotParseResponse)
+        }
+        
+        let minCount = min(spCloses.count, goldCloses.count, bondCloses.count)
+        var spReturns: [Double] = []
+        var goldReturns: [Double] = []
+        var bondReturns: [Double] = []
+        
+        for i in 1..<minCount {
+            spReturns.append((spCloses[i] - spCloses[i-1]) / spCloses[i-1])
+            goldReturns.append((goldCloses[i] - goldCloses[i-1]) / goldCloses[i-1])
+            bondReturns.append((bondCloses[i] - bondCloses[i-1]) / bondCloses[i-1])
+        }
+        
+        // Calculate correlations
+        func calculateCorrelation(_ x: [Double], _ y: [Double]) -> Double {
+            guard x.count == y.count && x.count >= 2 else { return 0 }
+            let meanX = x.reduce(0, +) / Double(x.count)
+            let meanY = y.reduce(0, +) / Double(y.count)
+            let numerator = zip(x, y).reduce(0) { sum, pair in
+                sum + (pair.0 - meanX) * (pair.1 - meanY)
+            }
+            let denominatorX = x.reduce(0) { sum, xi in sum + pow(xi - meanX, 2) }
+            let denominatorY = y.reduce(0) { sum, yi in sum + pow(yi - meanY, 2) }
+            guard denominatorX > 0 && denominatorY > 0 else { return 0 }
+            return numerator / sqrt(denominatorX * denominatorY)
+        }
+        
+        let avgCorrelation = (calculateCorrelation(spReturns, goldReturns) + calculateCorrelation(spReturns, bondReturns)) / 2
+        let score = Int(round((1 - avgCorrelation) * 100))
+        return max(0, min(100, score))
+    }
+
+    // 10. Sentiment Score (4% weight) - News sentiment analysis
+    func fetchSentimentScore(vix: Double, putCall: Double) -> Int {
+        let vixComponent = max(0, min(100, Int(round((45 - vix) / 35 * 100))))
+        let putCallComponent = max(0, min(100, Int(round((1.2 - putCall) / 0.5 * 100))))
+        return (vixComponent + putCallComponent) / 2
+    }
+
+    // 11. Technical Score (3% weight) - Technical indicators
+    func fetchTechnicalScore() async throws -> Int {
+        let urlString = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=2mo&interval=1d"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(YahooFinanceResponse.self, from: data)
+        guard let quote = response.chart.result.first?.indicators?.quote.first else { throw URLError(.cannotParseResponse) }
+        let closes = quote.close.compactMap { $0 }
+        guard closes.count > 20 else { throw URLError(.cannotParseResponse) }
+        
+        // Simple RSI calculation
+        var gains: [Double] = []
+        var losses: [Double] = []
+        
+        for i in 1..<closes.count {
+            let change = closes[i] - closes[i-1]
+            if change > 0 {
+                gains.append(change)
+                losses.append(0)
+            } else {
+                gains.append(0)
+                losses.append(-change)
+            }
+        }
+        
+        let period = 14
+        guard gains.count >= period && losses.count >= period else { return 50 }
+        
+        let avgGain = gains.suffix(period).reduce(0, +) / Double(period)
+        let avgLoss = losses.suffix(period).reduce(0, +) / Double(period)
+        
+        var rsi = 50.0
+        if avgLoss > 0 {
+            let rs = avgGain / avgLoss
+            rsi = 100 - (100 / (1 + rs))
+        }
+        
+        let rsiScore = rsi > 70 ? 100 : rsi < 30 ? 0 : Int((rsi - 30) / 40 * 100)
+        let macdScore = 50 // Simplified for now
+        return (rsiScore + macdScore) / 2
+    }
+
+    // 12. Economic Score (1% weight) - Economic indicators
+    func fetchEconomicScore() async throws -> Int {
+        let bond10Y = (try? await fetchBond10YValue()) ?? 4.0
+        // 금리 상승 = 경제 성장 = 탐욕
+        let score = Int(round(min(max((bond10Y - 1) / 4 * 100, 0), 100)))
+        return score
+    }
+
+    // 13. Global Score (1% weight) - Global market performance
+    func fetchGlobalScore() async throws -> Int {
+        let usURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1mo&interval=1d")!
+        let euURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/%5ESTOXX50E?range=1mo&interval=1d")!
+        let asiaURL = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/%5EN225?range=1mo&interval=1d")!
+        
+        async let usData = URLSession.shared.data(from: usURL)
+        async let euData = URLSession.shared.data(from: euURL)
+        async let asiaData = URLSession.shared.data(from: asiaURL)
+        
+        let (usResponse, euResponse, asiaResponse) = try await (usData, euData, asiaData)
+        
+        let usChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: usResponse.0)
+        let euChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: euResponse.0)
+        let asiaChart = try JSONDecoder().decode(YahooFinanceResponse.self, from: asiaResponse.0)
+        
+        guard let usCloses = usChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              let euCloses = euChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              let asiaCloses = asiaChart.chart.result.first?.indicators?.quote.first?.close.compactMap({ $0 }),
+              usCloses.count > 0, euCloses.count > 0, asiaCloses.count > 0 else {
+            throw URLError(.cannotParseResponse)
+        }
+        
+        let usReturn = (usCloses.last! - usCloses.first!) / usCloses.first!
+        let euReturn = (euCloses.last! - euCloses.first!) / euCloses.first!
+        let asiaReturn = (asiaCloses.last! - asiaCloses.first!) / asiaCloses.first!
+        
+        let avgGlobalReturn = (usReturn + euReturn + asiaReturn) / 3
+        let score = Int(round(((avgGlobalReturn + 0.1) / 0.2) * 100))
+        return max(0, min(100, score))
+    }
+
+    // (NEW) 통합 점수 fetch 및 계산 (13개 지표, CNN 스타일)
     func fetchAndCalculateMarketSentiment() async throws -> MarketSentimentScore {
         let sp500Prices = (try? await fetchSP500Prices()) ?? Array(repeating: 0.0, count: 125)
         let vix = (try? await fetchVIXValue()) ?? 20.0
@@ -370,6 +589,14 @@ extension VIXFetcher {
         let junkScore = calculateJunkBondScore(spread: junkSpread)
         let highLowScore = calculateHighLowScore(current: sp500Prices.last ?? 0, high: spHigh, low: spLow)
         let volumeScore = (try? await fetchVolumeScore()) ?? 50
+        
+        // 새로운 6개 지표 실제 계산
+        let volatilityScore = (try? await fetchVolatilityScore()) ?? 50
+        let correlationScore = (try? await fetchCorrelationScore()) ?? 50
+        let sentimentScore = fetchSentimentScore(vix: vix, putCall: putCall)
+        let technicalScore = (try? await fetchTechnicalScore()) ?? 50
+        let economicScore = (try? await fetchEconomicScore()) ?? 50
+        let globalScore = (try? await fetchGlobalScore()) ?? 50
 
         return MarketSentimentScore(
             vixScore: vixScore,
@@ -378,7 +605,13 @@ extension VIXFetcher {
             putCallScore: putCallScore,
             junkScore: junkScore,
             breadthScore: highLowScore,
-            volumeScore: volumeScore
+            volumeScore: volumeScore,
+            volatilityScore: volatilityScore,
+            correlationScore: correlationScore,
+            sentimentScore: sentimentScore,
+            technicalScore: technicalScore,
+            economicScore: economicScore,
+            globalScore: globalScore
         )
     }
 }
