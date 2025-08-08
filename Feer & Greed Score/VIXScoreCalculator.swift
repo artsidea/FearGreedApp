@@ -13,7 +13,8 @@ struct VIXScoreCalculator {
         let normalized = (45 - capped) / (45 - 10) // 0~1
         let score = Int(normalized * 100)
         
-        return Int(sqrt(Double(score) * 100))
+        // CNN 원래 계산식과 일치하도록 수정
+        return score
     }
 
     static func mood(for score: Int) -> String {

@@ -229,7 +229,8 @@ extension VIXFetcher {
         let capped = min(max(vix, 10), 45)
         let normalized = (45 - capped) / (45 - 10)
         let score = Int(normalized * 100)
-        return Int(sqrt(Double(score) * 100))
+        // CNN 원래 계산식과 일치하도록 수정
+        return score
     }
     // 국채 금리 점수 (안전자산 선호)
     func calculateBondScore(bond10Y: Double) -> Int {
@@ -317,7 +318,7 @@ extension VIXFetcher {
             safeHavenScore: bondScore,
             putCallScore: putCallScore,
             junkScore: junkScore,
-            breadthScore: 50, // Placeholder, needs actual data
+            breadthScore: highLowScore, // 실제 계산된 값 사용
             volumeScore: 50 // Placeholder, needs actual data
         )
     }
