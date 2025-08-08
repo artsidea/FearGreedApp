@@ -2,8 +2,11 @@ name: Build daily sentiment
 
 on:
   schedule:
-    - cron: '0 22 * * *' # 07:00 KST
+    - cron: '0 22 * * *' # 07:00 KST (22:00 UTC)
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ '.github/workflows/daily.yml' ]
 
 permissions:
   contents: write
@@ -13,17 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Ensure dirs
-        run: mkdir -p docs scripts
+        run: mkdir -p docs
 
       - name: Write fetch script
         run: |
-          cat > scripts/fetch_daily.js <<'EOF'
+          mkdir -p /tmp/scripts
+          cat > /tmp/scripts/fetch_daily.js <<'EOF'
           const fs = require('fs');
 
           // --- Helpers: resilient fetch with default UA and safe fallbacks ---
@@ -297,18 +303,51 @@ jobs:
           EOF
 
       - name: Build daily.json
-        run: node scripts/fetch_daily.js
+        run: node /tmp/scripts/fetch_daily.js
 
       - name: Commit and push
         run: |
+          # Git 설정
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/daily.json
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
+          
+          # Git 상태 확인
+          echo "=== Git Status ==="
+          git status
+          
+          # docs/daily.json이 존재하는지 확인
+          if [ -f "docs/daily.json" ]; then
+            echo "docs/daily.json exists, proceeding with commit"
+            
+            # docs/daily.json만 추가
+            git add docs/daily.json
+            
+            # 변경사항이 있는지 확인
+            if git diff --staged --quiet; then
+              echo "No changes to commit - daily.json is up to date"
+            else
+              echo "Changes detected, committing..."
+              git commit -m "chore: update daily sentiment with CNN-style calculation [skip ci]"
+              
+              # Push with retry logic
+              for i in {1..3}; do
+                echo "Attempting to push (attempt $i/3)..."
+                if git push; then
+                  echo "Push successful!"
+                  break
+                else
+                  echo "Push failed, attempt $i/3"
+                  if [ $i -eq 3 ]; then
+                    echo "All push attempts failed"
+                    exit 1
+                  fi
+                  sleep 5
+                fi
+              done
+            fi
           else
-            git commit -m "chore: update daily sentiment with CNN-style calculation"
-            git push
+            echo "docs/daily.json not found, skipping commit"
+            exit 1
           fi
 
 
