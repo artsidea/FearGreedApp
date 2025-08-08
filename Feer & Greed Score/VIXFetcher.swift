@@ -139,12 +139,6 @@ struct DailySentimentPayload: Codable {
         let junkScore: Int
         let breadthScore: Int
         let volumeScore: Int
-        let volatilityScore: Int
-        let correlationScore: Int
-        let sentimentScore: Int
-        let technicalScore: Int
-        let economicScore: Int
-        let globalScore: Int
         let finalScore: Int
     }
     let asOf: String
@@ -240,13 +234,7 @@ extension VIXFetcher {
             putCallScore: payload.scores.putCallScore,
             junkScore: payload.scores.junkScore,
             breadthScore: payload.scores.breadthScore,
-            volumeScore: payload.scores.volumeScore,
-            volatilityScore: payload.scores.volatilityScore,
-            correlationScore: payload.scores.correlationScore,
-            sentimentScore: payload.scores.sentimentScore,
-            technicalScore: payload.scores.technicalScore,
-            economicScore: payload.scores.economicScore,
-            globalScore: payload.scores.globalScore
+            volumeScore: payload.scores.volumeScore
         )
     }
 
