@@ -2,11 +2,13 @@ name: Build daily sentiment
 
 on:
   schedule:
-    - cron: '0 22 * * *' # 07:00 KST (22:00 UTC)
-  workflow_dispatch:
+    - cron: '0 18 * * *' # 18:00 EDT (22:00 UTC) - 매일 저녁
+    - cron: '0 9 * * *'  # 09:00 EDT (13:00 UTC) - 매일 아침 (백업)
+  workflow_dispatch: # 수동 실행 가능
   push:
     branches: [ main ]
     paths: [ '.github/workflows/daily.yml' ]
+  repository_dispatch: # 외부 API 호출로 실행 가능
 
 permissions:
   contents: write
