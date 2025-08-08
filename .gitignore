@@ -20,4 +20,7 @@ DerivedData
 !default.xcworkspace
 
 # Config files
-Feer & Greed Score/Config.swift 
+Feer & Greed Score/Config.swift
+
+# GitHub Actions generated files
+scripts/ 

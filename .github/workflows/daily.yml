@@ -304,7 +304,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/daily.json
-          git commit -m "chore: update daily sentiment with CNN-style calculation"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update daily sentiment with CNN-style calculation"
+            git push
+          fi
 
 
