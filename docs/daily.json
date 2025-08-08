@@ -12,13 +12,13 @@
     "usdDxy": 103
   },
   "scores": {
-    "vixScore": 85,
+    "vixScore": 59,
     "momentumScore": 50,
     "safeHavenScore": 100,
     "putCallScore": 50,
     "junkScore": 84,
     "breadthScore": 1,
     "volumeScore": 66,
-    "finalScore": 66
+    "finalScore": 59
   }
 }
