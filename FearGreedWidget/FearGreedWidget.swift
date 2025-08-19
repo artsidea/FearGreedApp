@@ -19,89 +19,38 @@ struct FearGreedEntry: TimelineEntry {
 struct Provider: TimelineProvider {
     private let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
     private let lastUpdateKey = "lastVIXUpdate"
-    private let vixScoreKey = "lastVIXScore"
-    private let centralDailyURL = URL(string: "https://artsidea.github.io/FearGreedApp/daily.json")!
-
-    struct DailyPayload: Decodable {
-        struct Scores: Decodable { 
-            let finalScore: Int 
-        }
-        let scores: Scores
-    }
+    private let stockScoreKey = "lastStockScore"  // 앱과 동일한 키 사용
+    private let cryptoScoreKey = "lastCryptoScore" // 암호화폐는 별개
     
     func placeholder(in context: Context) -> FearGreedEntry {
-        let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
-        return FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
+        let stockScore = userDefaults?.integer(forKey: stockScoreKey) ?? 0
+        return FearGreedEntry(date: Date(), score: stockScore > 0 ? stockScore : 50)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FearGreedEntry) -> Void) {
-        let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
-        let entry = FearGreedEntry(date: Date(), score: cachedScore > 0 ? cachedScore : 50)
+        let stockScore = userDefaults?.integer(forKey: stockScoreKey) ?? 0
+        let entry = FearGreedEntry(date: Date(), score: stockScore > 0 ? stockScore : 50)
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FearGreedEntry>) -> Void) {
-        Task {
-            var score = 50 // 기본값을 50으로 설정
-            var fetchedScore: Int?
-            
-            // 실제 데이터를 가져오기 시도
-            do {
-                fetchedScore = try await fetchCentralScore()
-                if let fetched = fetchedScore {
-                    score = fetched
-                    // 위젯에서도 최신 점수를 앱 그룹에 업데이트하여 일관성 유지
-                    userDefaults?.set(score, forKey: vixScoreKey)
-                    userDefaults?.set(Date(), forKey: lastUpdateKey)
-                    print("Widget: Fetched score \(score) from central JSON")
-                } else {
-                    // 캐시된 데이터가 있으면 사용
-                    let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
-                    if cachedScore > 0 {
-                        score = cachedScore
-                        print("Widget: Using cached score \(score)")
-                    } else {
-                        print("Widget: No data available, using default score \(score)")
-                    }
-                }
-            } catch {
-                // 에러 발생 시 캐시된 데이터 사용
-                let cachedScore = userDefaults?.integer(forKey: vixScoreKey) ?? 0
-                if cachedScore > 0 {
-                    score = cachedScore
-                    print("Widget: Error fetching data, using cached score \(score)")
-                } else {
-                    print("Widget: Error fetching data and no cache, using default score \(score)")
-                }
-            }
+        // 앱에서 저장한 주식 스코어를 직접 사용 (동기화)
+        let stockScore = userDefaults?.integer(forKey: stockScoreKey) ?? 0
+        let score = stockScore > 0 ? stockScore : 50
+        
+        print("Widget: Using app's stock score: \(score)")
+        
+        let entry = FearGreedEntry(date: Date(), score: score)
 
-            let entry = FearGreedEntry(date: Date(), score: score)
+        // 더 자주 업데이트 (1시간마다)
+        let calendar = Calendar.current
+        let nextUpdate = calendar.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
 
-            // 다음 업데이트 시간 계산 (매일 오전 7시)
-            let calendar = Calendar.current
-            var nextUpdate = calendar.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
-            if Date() >= nextUpdate {
-                nextUpdate = calendar.date(byAdding: .day, value: 1, to: nextUpdate) ?? nextUpdate
-            }
-
-            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-            completion(timeline)
-        }
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
     }
 
-    private func fetchCentralScore() async throws -> Int {
-        let (data, response) = try await URLSession.shared.data(from: centralDailyURL)
-        
-        // HTTP 응답 상태 확인
-        if let httpResponse = response as? HTTPURLResponse {
-            guard httpResponse.statusCode == 200 else {
-                throw URLError(.badServerResponse)
-            }
-        }
-        
-        let payload = try JSONDecoder().decode(DailyPayload.self, from: data)
-        return payload.scores.finalScore
-    }
+
 }
 
 // MARK: - Widget View

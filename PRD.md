@@ -94,17 +94,22 @@
   - 수동 실행 지원(workflow_dispatch)
 
 ### 앱 동작(주요 변경)
-- `VIXFetcher.fetchFromGithubDaily()` 추가: 중앙 JSON 파싱 → `MarketSentimentScore` 반환
-- `.stock` 경로는 항상 중앙 JSON을 사용(`ContentView_new.swift`)
-- 시장 전환시(`onChange`) 네트워크 호출 전 `currentMarket`를 먼저 반영하여 전환 실패에도 UI 일관성 유지
+- `VIXFetcher.fetchFromGithubDaily()` 추가: 중앙 JSON 파싱 → `MarketSentimentScore` 구성
+- `.stock` 경로는 항상 중앙 JSON만 사용(직접 API/가상 데이터/로컬 계산 경로 제거)
+- 최종 점수 사용: 중앙 JSON의 개별 `scores`(vix/momentum/...)를 받아 앱에서 PRD 7지표 가중치로 최종 점수를 재계산하여 사용(`payload.scores.finalScore`는 참고만 함)
+- 표시 보정(임시): 주식(.stock)에 한해 50을 중심으로 편차 33% 유지 선형 보정 적용. 수식 `calibrated = 50 + (rawFinal - 50) * 0.33` (단조/순서 보존, 가상 데이터 아님). 크립토는 보정 없음
+- 히스토리/폴백: 이동평균/스무딩 제거. 네트워크 실패/누락 시 "이전 마지막 실제 값" 유지
+- 시장 전환시(`onChange`) 네트워크 성공 여부와 무관하게 전환 상태 유지(전환 먼저 반영 → 데이터 도착 시 동일 보정/동일 저장 경로 적용)
 - 로컬 캐시: `UserDefaults(suiteName: "group.com.hyujang.feargreed")`
+- 진단 로깅: 중앙 JSON `metrics`로부터 PRD 공식대로 5개 지표(VIX, Momentum, Put/Call, Junk, Breadth)를 재계산해 `payload.scores`와 차이를 로그로 출력
 
 ### CNN과의 차이점 및 개선사항
-- **가중치 적용**: CNN과 동일한 가중치 체계 적용
+- **가중치 적용**: 본 PRD 7지표 가중치 사용. CNN 원본은 동가중(1/7)이라 상류 산식 CNN 정합 후 동가중 전환 고려
 - **Safe Haven 지표**: 10Y 금리 대신 주식 vs 채권 상대 성과 사용
 - **Market Volume 추가**: CNN의 7번째 지표인 거래량 지표 추가
 - **스케일링 개선**: 극단값에서 과대평가 방지를 위한 캡핑 적용
 - **퍼센타일 정규화**: 향후 히스토리 퍼센타일 기반 계산으로 개선 가능
+- **표시 보정(임시)**: 상류 산식 CNN 정합 전까지 상단 포화 억제를 위해 앱 표시 단계에서만 선형 보정 적용. 상류 정합 시 제거 예정
 
 ### 오류 처리
 - 중앙 JSON 호출 실패 시: 에러 메시지 표시, 이전 표시값 유지

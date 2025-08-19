@@ -281,10 +281,14 @@ class LiquidScene: SKScene, SKPhysicsContactDelegate {
                 let cgColors = colors.map { $0.cgColor } as CFArray
                 let colorSpace = CGColorSpaceCreateDeviceRGB()
                 let gradient = CGGradient(colorsSpace: colorSpace, colors: cgColors, locations: nil)!
-                ctx.cgContext.drawLinearGradient(
+                let center = CGPoint(x: size.width/2, y: size.height/2)
+                let radius = (max(size.width, size.height) / 2) * 3
+                ctx.cgContext.drawRadialGradient(
                     gradient,
-                    start: CGPoint(x: 0, y: 0),
-                    end: CGPoint(x: size.width, y: size.height),
+                    startCenter: center,
+                    startRadius: 0,
+                    endCenter: center,
+                    endRadius: radius,
                     options: []
                 )
             }
