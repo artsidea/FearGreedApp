@@ -17,7 +17,32 @@ struct VIXFetcher {
     private let vixValueKey = "lastVIXValue"
     private let vixScoreKey = "lastVIXScore"
     
+    // 시장별로 다른 키 사용
+    private let stockScoresKey = "recentStockScores"
+    private let cryptoScoresKey = "recentCryptoScores"
+    private let maxStoredScores = 7  // 최근 7일간의 데이터 유지
+    
+    // 표시 보정(Stock) 계수: 50 기준 편차를 33%만 남김 → 83 -> 약 61
+    var stockCalibrationFactor: Double = 0.33
+
     private init() {}
+
+    // CNN에 더 근접하도록 극단값을 완만하게 만드는 단조 보정 함수
+    // 50을 중심으로 편차를 factor만큼 축소 (ex. 0.7이면 30% 완화)
+    private func calibrateScore(_ score: Int, factor: Double = 0.7) -> Int {
+        let clamped = max(0, min(100, score))
+        let adjusted = 50.0 + (Double(clamped) - 50.0) * factor
+        return max(0, min(100, Int(round(adjusted))))
+    }
+
+    // 외부에서 사용할 수 있도록 공개 래퍼
+    func calibratedScore(_ score: Int, factor: Double = 0.7) -> Int {
+        return calibrateScore(score, factor: factor)
+    }
+
+    func calibratedScoreForStock(_ score: Int) -> Int {
+        return calibrateScore(score, factor: stockCalibrationFactor)
+    }
     
     func fetchVIX() async throws -> Double {
         // 마지막 업데이트 시간 확인
@@ -90,9 +115,11 @@ struct VIXFetcher {
         }
     }
     
-    // 저장된 마지막 VIX 점수 가져오기
+    // 저장된 마지막 VIX 점수 가져오기 (이동 평균 기반)
     func getLastScore() -> Int {
-        return userDefaults.integer(forKey: vixScoreKey)
+        // 현재 선택된 시장에 따라 적절한 스코어 반환
+        // 기본적으로는 주식 스코어 반환 (하위 호환성 유지)
+        return getLastStockScore()
     }
     
     // 저장된 마지막 VIX 값 가져오기
@@ -103,6 +130,215 @@ struct VIXFetcher {
     // 저장된 마지막 업데이트 시간 가져오기
     func getLastUpdateTime() -> Date? {
         return userDefaults.object(forKey: lastUpdateKey) as? Date
+    }
+    
+    // 주식 스코어 저장 및 이동 평균 계산
+    func updateStockScore(_ newScore: Int) {
+        _ = addScoreAndCalculateAverage(newScore, for: stockScoresKey)
+    }
+    
+    // 암호화폐 스코어 저장 및 이동 평균 계산
+    func updateCryptoScore(_ newScore: Int) {
+        _ = addScoreAndCalculateAverage(newScore, for: cryptoScoresKey)
+    }
+    
+    // 주식 스코어 가져오기 (이동 평균 기반)
+    func getLastStockScore() -> Int {
+        let recentScores = getRecentScores(for: stockScoresKey)
+        
+        if recentScores.isEmpty {
+            return 50
+        }
+        
+        // 평균 대신 마지막 실제 값 반환 (누락 시 이전값 유지 정책)
+        return recentScores.last ?? 50
+    }
+    
+    // 암호화폐 스코어 가져오기 (이동 평균 기반)
+    func getLastCryptoScore() -> Int {
+        let recentScores = getRecentScores(for: cryptoScoresKey)
+        
+        if recentScores.isEmpty {
+            return 50
+        }
+        
+        // 평균 대신 마지막 실제 값 반환
+        return recentScores.last ?? 50
+    }
+    
+    // 기존 메서드 수정 (하위 호환성 유지)
+    func updateScore(_ newScore: Int) {
+        // 기본적으로 주식 스코어로 저장 (하위 호환성)
+        updateStockScore(newScore)
+    }
+    
+    // 현재 시장에 따른 스코어 가져오기
+    func getScoreForMarket(_ marketType: MarketType) -> Int {
+        switch marketType {
+        case .stock:
+            return getLastStockScore()
+        case .crypto:
+            return getLastCryptoScore()
+        }
+    }
+    
+    // 현재 시장에 따른 스코어 업데이트
+    func updateScoreForMarket(_ newScore: Int, marketType: MarketType) {
+        switch marketType {
+        case .stock:
+            updateStockScore(newScore)
+        case .crypto:
+            updateCryptoScore(newScore)
+        }
+    }
+    
+    // 이전 데이터 유지하면서 업데이트하는 메서드 추가
+    func updateScoreForMarketWithFallback(_ newScore: Int, marketType: MarketType) -> Int {
+        switch marketType {
+        case .stock:
+            return updateStockScoreWithFallback(newScore)
+        case .crypto:
+            return updateCryptoScoreWithFallback(newScore)
+        }
+    }
+    
+    // 주식 스코어 업데이트 (이전 데이터 유지)
+    private func updateStockScoreWithFallback(_ newScore: Int) -> Int {
+        // 새 스코어가 유효한지 확인 (0-100 범위). 유효하지 않으면 마지막 값 유지
+        guard (0...100).contains(newScore) else {
+            return getLastStockScore()
+        }
+        
+        return addScoreAndCalculateAverage(newScore, for: stockScoresKey)
+    }
+    
+    // 암호화폐 스코어 업데이트 (이전 데이터 유지)
+    private func updateCryptoScoreWithFallback(_ newScore: Int) -> Int {
+        // 새 스코어가 유효한지 확인 (0-100 범위). 유효하지 않으면 마지막 값 유지
+        guard (0...100).contains(newScore) else {
+            return getLastCryptoScore()
+        }
+        
+        return addScoreAndCalculateAverage(newScore, for: cryptoScoresKey)
+    }
+    
+    // 네트워크 실패 시 이전 데이터 반환
+    func getLastValidScoreForMarket(_ marketType: MarketType) -> Int {
+        switch marketType {
+        case .stock:
+            return getLastStockScore()
+        case .crypto:
+            return getLastCryptoScore()
+        }
+    }
+    
+    // 디버깅용: 현재 저장된 데이터 확인
+    func debugStoredScores() -> String {
+        let stockScores = getRecentScores(for: stockScoresKey)
+        let cryptoScores = getRecentScores(for: cryptoScoresKey)
+        
+        return """
+        📊 저장된 데이터 현황:
+        주식 스코어: \(stockScores) (평균: \(getLastStockScore()))
+        암호화폐 스코어: \(cryptoScores) (평균: \(getLastCryptoScore()))
+        """
+    }
+    
+    // 디버깅용: 저장된 데이터 초기화
+    func clearAllStoredScores() {
+        userDefaults.removeObject(forKey: stockScoresKey)
+        userDefaults.removeObject(forKey: cryptoScoresKey)
+        userDefaults.removeObject(forKey: vixScoreKey)
+        print("📊 모든 저장된 스코어 초기화 완료")
+    }
+    
+    // 외부 데이터 검증 메서드
+    func validateExternalData(_ externalScore: MarketSentimentScore) -> (isValid: Bool, localScore: Int, difference: Int) {
+        // 로컬에서 실제 시장 데이터로 계산
+        let localScore = calculateLocalScore()
+        
+        // 외부 데이터와 로컬 계산 결과 비교
+        let difference = abs(externalScore.finalScore - localScore)
+        let isValid = difference <= 15 // 15점 이내 차이는 허용
+        
+        print("🔍 데이터 검증 결과:")
+        print("   외부 점수: \(externalScore.finalScore)")
+        print("   로컬 점수: \(localScore)")
+        print("   차이: \(difference)")
+        print("   유효성: \(isValid ? "✅ 유효" : "❌ 의심스러움")")
+        
+        return (isValid, localScore, difference)
+    }
+    
+    // 로컬에서 실제 시장 데이터로 점수 계산
+    private func calculateLocalScore() -> Int {
+        // 실제 시장 데이터로 계산 (CNN 공식 기반)
+        // 이 메서드는 실제 구현이 필요합니다
+        return 50 // 임시 반환값
+    }
+    
+    // 실제 시장 데이터로 CNN 공식 기반 점수 계산
+    func calculateCNNScoreFromRealData() async -> Int {
+        do {
+            // 1. VIX 점수 계산
+            let vixValue = try await fetchVIXValue()
+            let vixScore = calculateVIXScore(vix: vixValue)
+            
+            // 2. S&P500 모멘텀 점수 계산
+            let sp500Prices = try await fetchSP500Prices()
+            let momentumScore = calculateSP500MomentumScore(prices: sp500Prices)
+            
+            // 3. 국채 10Y 점수 계산
+            let bond10Y = try await fetchBond10YValue()
+            let bondScore = calculateBondScore(bond10Y: bond10Y)
+            
+            // 4. Put/Call 비율 점수 계산
+            let putCallRatio = try await fetchPutCallRatio()
+            let putCallScore = calculatePutCallScore(ratio: putCallRatio)
+            
+            // 5. CNN 가중 평균 계산 (13개 지표)
+            let finalScore = Int(round(
+                Double(vixScore) * 0.20 +           // VIX (20%)
+                Double(momentumScore) * 0.15 +      // Momentum (15%)
+                Double(bondScore) * 0.12 +          // Safe Haven (12%)
+                Double(putCallScore) * 0.10 +       // Put/Call Ratio (10%)
+                // 나머지는 기본값 50으로 설정
+                50.0 * 0.43                         // 기타 지표들 (43%)
+            ))
+            
+            print("🔍 CNN 공식 기반 로컬 계산:")
+            print("   VIX: \(vixValue) → \(vixScore)점")
+            print("   모멘텀: \(momentumScore)점")
+            print("   국채: \(bond10Y)% → \(bondScore)점")
+            print("   Put/Call: \(putCallRatio) → \(putCallScore)점")
+            print("   최종 점수: \(finalScore)점")
+            
+            return finalScore
+            
+        } catch {
+            print("❌ 로컬 계산 실패: \(error)")
+            return 50 // 기본값
+        }
+    }
+    
+    // 헬퍼 메서드들
+    private func getRecentScores(for key: String) -> [Int] {
+        return userDefaults.array(forKey: key) as? [Int] ?? []
+    }
+    
+    private func addScoreAndCalculateAverage(_ newScore: Int, for key: String) -> Int {
+        var recentScores = getRecentScores(for: key)
+        
+        recentScores.append(newScore)
+        
+        if recentScores.count > maxStoredScores {
+            recentScores.removeFirst(recentScores.count - maxStoredScores)
+        }
+        
+        userDefaults.set(recentScores, forKey: key)
+        
+        // 평균이 아닌 마지막 실제 값을 반환해 누락 시 이전값 정책을 유지
+        return recentScores.last ?? newScore
     }
 }
 
@@ -168,21 +404,16 @@ struct MarketSentimentScore {
     let globalScore: Int
     
     var finalScore: Int {
-        // CNN-style weighted average (13개 지표)
+        // PRD: CNN 스타일 7개 지표 가중 평균
+        // vix:25%, momentum:20%, safeHaven:15%, putCall:15%, junk:10%, breadth:10%, volume:5%
         return Int(round(
-            Double(vixScore) * 0.20 +           // VIX (20%)
-            Double(momentumScore) * 0.15 +      // Momentum (15%)
-            Double(safeHavenScore) * 0.12 +     // Safe Haven (12%)
-            Double(putCallScore) * 0.10 +       // Put/Call Ratio (10%)
-            Double(junkScore) * 0.08 +          // Junk Bond Spread (8%)
-            Double(breadthScore) * 0.08 +       // Market Breadth (8%)
-            Double(volumeScore) * 0.05 +        // Volume (5%)
-            Double(volatilityScore) * 0.08 +    // Volatility (8%)
-            Double(correlationScore) * 0.05 +   // Correlation (5%)
-            Double(sentimentScore) * 0.04 +     // Sentiment (4%)
-            Double(technicalScore) * 0.03 +     // Technical (3%)
-            Double(economicScore) * 0.01 +      // Economic (1%)
-            Double(globalScore) * 0.01          // Global (1%)
+            Double(vixScore) * 0.25 +
+            Double(momentumScore) * 0.20 +
+            Double(safeHavenScore) * 0.15 +
+            Double(putCallScore) * 0.15 +
+            Double(junkScore) * 0.10 +
+            Double(breadthScore) * 0.10 +
+            Double(volumeScore) * 0.05
         ))
     }
     
@@ -209,6 +440,48 @@ struct MarketSentimentScore {
 }
 
 extension VIXFetcher {
+    // PRD 공식으로 metrics에서 5개 지표 재계산 (진단용)
+    func recomputeScoresFromMetrics(_ metrics: [String: Double]) -> (vix: Int, momentum: Int, putCall: Int, junk: Int, breadth: Int)? {
+        guard let vix = metrics["vix"],
+              let currentSP = metrics["currentSP"],
+              let ma125 = metrics["ma125"],
+              let putCall = metrics["putCall"],
+              let junk = metrics["junkSpread"],
+              let spHigh = metrics["spHigh"],
+              let spLow = metrics["spLow"]
+        else { return nil }
+
+        // 1) VIX
+        let vixCapped = min(max(vix, 10), 45)
+        let vixScore = Int(round((45 - vixCapped) / 35 * 100))
+
+        // 2) Momentum
+        let momentumRaw = (currentSP - ma125) / ma125
+        let momentumCapped = min(max(momentumRaw, -0.1), 0.1)
+        let momentumScore = Int(round(((momentumCapped + 0.1) / 0.2) * 100))
+
+        // 3) Put/Call
+        let putCallCapped = min(max(putCall, 0.7), 1.2)
+        let putCallScore = Int(round(((1.2 - putCallCapped) / 0.5) * 100))
+
+        // 4) Junk Spread
+        let junkCapped = min(max(junk, 2), 8)
+        let junkScore = Int(round(((8 - junkCapped) / 6) * 100))
+
+        // 5) Breadth (52주 포지션)
+        guard spHigh > spLow else { return nil }
+        let breadthNorm = (currentSP - spLow) / (spHigh - spLow)
+        let breadthScore = Int(round(breadthNorm * 100))
+
+        return (
+            vix: max(0, min(100, vixScore)),
+            momentum: max(0, min(100, momentumScore)),
+            putCall: max(0, min(100, putCallScore)),
+            junk: max(0, min(100, junkScore)),
+            breadth: max(0, min(100, breadthScore))
+        )
+    }
+
     // 중앙 JSON에서 점수 가져오기 (GitHub Pages)
     func fetchFromGithubDaily() async throws -> MarketSentimentScore {
         guard let url = URL(string: centralDailyURLString), !centralDailyURLString.contains("<GITHUB_USERNAME>") else {
@@ -217,11 +490,26 @@ extension VIXFetcher {
         let (data, _) = try await URLSession.shared.data(from: url)
         let payload = try JSONDecoder().decode(DailySentimentPayload.self, from: data)
 
-        // 일부 값은 기존 로컬 캐시에 저장 (위젯 공유 등)
-        userDefaults.set(Date(), forKey: lastUpdateKey)
-        userDefaults.set(payload.scores.finalScore, forKey: vixScoreKey)
+        // 진단: metrics 기반 재계산과 payload.scores 비교
+        if let metrics = payload.metrics, let recomputed = recomputeScoresFromMetrics(metrics) {
+            let diffs = [
+                ("vix", payload.scores.vixScore, recomputed.vix),
+                ("momentum", payload.scores.momentumScore, recomputed.momentum),
+                ("putCall", payload.scores.putCallScore, recomputed.putCall),
+                ("junk", payload.scores.junkScore, recomputed.junk),
+                ("breadth", payload.scores.breadthScore, recomputed.breadth)
+            ]
+            print("🔎 Metrics vs Scores 차이(절대값)")
+            for (name, s, r) in diffs {
+                let d = abs(s - r)
+                print(" - \(name): payload=\(s), recomputed=\(r), diff=\(d)")
+            }
+        } else {
+            print("ℹ️ metrics가 부족해 재계산 진단을 건너뜀")
+        }
 
-        return MarketSentimentScore(
+        // MarketSentimentScore 구성
+        let market = MarketSentimentScore(
             vixScore: payload.scores.vixScore,
             momentumScore: payload.scores.momentumScore,
             safeHavenScore: payload.scores.safeHavenScore,
@@ -236,6 +524,12 @@ extension VIXFetcher {
             economicScore: payload.scores.economicScore ?? 50,
             globalScore: payload.scores.globalScore ?? 50
         )
+
+        // 일부 값은 기존 로컬 캐시에 저장 (위젯 공유 등) - 합산은 로컬 공식을 사용
+        userDefaults.set(Date(), forKey: lastUpdateKey)
+        userDefaults.set(market.finalScore, forKey: vixScoreKey)
+
+        return market
     }
 
     // S&P500 125일치 종가 fetch

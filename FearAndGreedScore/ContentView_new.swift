@@ -104,31 +104,40 @@ struct ContentView: View {
                 // 배경
                 Color.black.opacity(0.1).ignoresSafeArea()
                 
-                // 구간별 표시 (왼쪽)
-                let sectionLabels = ["Extreme Greed", "Greed", "Neutral", "Fear", "Extreme Fear"]
-                let sectionRanges = [100, 75, 55, 45, 20, 0]
-                let labelHeights: [CGFloat] = (0..<sectionLabels.count).map { i in
-                    height * (CGFloat(sectionRanges[i] - sectionRanges[i+1]) / 100)
-                }
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(0..<sectionLabels.count, id: \.self) { i in
-                        VStack(alignment: .leading, spacing: 0) {
+                // 구간별 표시 (왼쪽) — 안전영역 기준 퍼센트 고정 배치
+                let safeTop = geo.safeAreaInsets.top
+                let safeBottom = geo.safeAreaInsets.bottom
+                let safeHeight = height - safeTop - safeBottom
+
+                ZStack(alignment: .topLeading) {
+                    let marks: [(String, CGFloat)] = [
+                        ("Extreme Fear", 0.15),
+                        ("Fear",         0.30),
+                        ("Neutral",      0.45),
+                        ("Greed",        0.65),
+                        ("Extreme Greed",0.85)
+                    ]
+                    ForEach(0..<marks.count, id: \.self) { i in
+                        let (label, pctFromTop) = marks[i]
+                        // 아래에서 위로 0%→100%가 되도록 반전
+                        let y = safeTop + safeHeight * (1 - pctFromTop)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            // 좌측 정렬 선
                             Rectangle()
                                 .fill(Color.black.opacity(0.4))
-                                .frame(width: 10, height: 1, alignment: .leading)
-                                .alignmentGuide(.leading) { d in d[.leading] }
-                                .padding(.leading, 16)
-                            Text(sectionLabels[i])
+                                .frame(width: 10, height: 1)
+                            // 선 아래에 텍스트 좌측 정렬
+                            Text(label)
                                 .font(.caption)
                                 .foregroundColor(.black)
-                                .frame(height: labelHeights[i], alignment: .top)
-                                .padding(.leading, 1)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 16)
+                        .offset(x: 0, y: y)
                     }
-                    Spacer()
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .zIndex(10)
                 .allowsHitTesting(false)
                 
@@ -146,14 +155,94 @@ struct ContentView: View {
                             selectedMarket = next
                         }
                     }) {
-                        Image(systemName: selectedMarket == .stock ? "chevron.right.circle.fill" : "chevron.left.circle.fill")
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(Color(.sRGB, white: 0.12, opacity: 0.85))
+                        ZStack(alignment: .leading) {
+                            let toggleWidth: CGFloat = 72
+                            let toggleHeight: CGFloat = 44
+                            let knobSize: CGFloat = 40
+                            // Track
+                            RoundedRectangle(cornerRadius: toggleHeight/2)
+                                .fill(Color.black.opacity(0.08))
+                                .frame(width: toggleWidth, height: toggleHeight)
+                                // Outline for contrast
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: toggleHeight/2)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                                // Inner shade (top highlight -> bottom shadow)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: toggleHeight/2)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.black.opacity(0.18), Color.clear],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                        .mask(
+                                            RoundedRectangle(cornerRadius: toggleHeight/2)
+                                                .inset(by: 1)
+                                        )
+                                )
+                                // Inner side shade (left to right)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: toggleHeight/2)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.black.opacity(0.06), Color.clear, Color.black.opacity(0.06)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .mask(
+                                            RoundedRectangle(cornerRadius: toggleHeight/2)
+                                                .inset(by: 1)
+                                        )
+                                )
+                            // Faint inactive symbols (no circle) on opposite side
+                            HStack {
+                                if selectedMarket == .crypto {
+                                    Image(systemName: "dollarsign.circle.fill")
+                                        .resizable()
+                                        .frame(width: knobSize, height: knobSize)
+                                        .foregroundColor(Color(.sRGB, white: 0.12, opacity: 0.85))
+                                        .opacity(0.0)
+                                } else {
+                                    Color.clear.frame(width: knobSize, height: knobSize)
+                                }
+                                Spacer()
+                                if selectedMarket == .stock {
+                                    Image(systemName: "bitcoinsign.circle.fill")
+                                        .resizable()
+                                        .frame(width: knobSize, height: knobSize)
+                                        .foregroundColor(Color(.sRGB, white: 0.12, opacity: 0.85))
+                                        .opacity(0.0)
+                                } else {
+                                    Color.clear.frame(width: knobSize, height: knobSize)
+                                }
+                            }
+                            .frame(width: toggleWidth, height: toggleHeight)
+                            .allowsHitTesting(false)
+                            // Knob (active icon with circle)
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.sRGB, white: 0.12, opacity: 0.85))
+                                    .overlay(
+                                        Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    )
+                                Text(selectedMarket == .stock ? "$" : "₿")
+                                    .font(.system(size: knobSize * 0.55, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(width: knobSize, height: knobSize)
                             .shadow(radius: 4)
-                            .padding(.bottom, 8)
+                                .offset(x: selectedMarket == .stock ? 2 : (toggleWidth - knobSize - 2))
+                                .animation(.easeInOut(duration: 0.2), value: selectedMarket)
+                        }
+                        .frame(width: 66, height: 44)
+                        .zIndex(200)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .buttonStyle(.plain)
+                    .position(x: geo.size.width / 2, y: height - geo.safeAreaInsets.bottom - 48)
                     // 안내 텍스트
                     if currentMarket == .crypto {
                         Text("CRYPTO FEAR & GREED: \(currentScore) (\(currentCryptoMood))")
@@ -165,10 +254,10 @@ struct ContentView: View {
                                 .font(.caption2)
                                 .foregroundColor(.black.opacity(0.7))
                                 .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.bottom, height * 0.04)
+                                .padding(.bottom, height * 0.012)
                         } else {
                             Text("")
-                                .padding(.bottom, height * 0.04)
+                                .padding(.bottom, height * 0.012)
                         }
                     } else {
                         Text("STOCK FEAR & GREED: \(currentScore)")
@@ -179,10 +268,10 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.bottom, height * 0.04)
+                            .padding(.bottom, height * 0.012)
                     }
                 }
-                .zIndex(20)
+                .zIndex(200)
                 
                 if let error = errorMessage {
                     VStack {
@@ -201,7 +290,13 @@ struct ContentView: View {
                     .zIndex(100)
             }
             .onAppear {
-                currentScore = VIXFetcher.shared.getLastScore()
+                // 현재 선택된 시장에 맞는 스코어 로드
+                currentScore = VIXFetcher.shared.getScoreForMarket(selectedMarket)
+                
+                // 디버깅 정보 출력
+                print("🔍 디버깅 정보:")
+                print(VIXFetcher.shared.debugStoredScores())
+                
                 fetchData()
                 Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                     self.now = Date()
@@ -229,28 +324,41 @@ struct ContentView: View {
                             if newValue == .stock { currentCryptoMood = "" }
                         }
                         do {
-                            if newValue == .stock {
-                                let sentiment = try await VIXFetcher.shared.fetchFromGithubDaily()
-                                await MainActor.run {
-                                    currentScore = sentiment.finalScore
-                                    let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
-                                    userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
-                                    isLoading = false
-                                    lastCryptoUpdate = nil
-                                }
-                            } else {
-                                let url = URL(string: "https://api.alternative.me/fng/")!
-                                let (data, _) = try await URLSession.shared.data(from: url)
-                                let decoded = try JSONDecoder().decode(CryptoFearGreed.self, from: data)
-                                let value = Int(decoded.data.first?.value ?? "50") ?? 50
-                                let mood = decoded.data.first?.value_classification ?? ""
-                                await MainActor.run {
-                                    currentScore = value
-                                    currentCryptoMood = mood
-                                    isLoading = false
-                                    lastCryptoUpdate = Date()
-                                }
-                            }
+                                            if newValue == .stock {
+                    let sentiment = try await VIXFetcher.shared.fetchFromGithubDaily()
+                    await MainActor.run {
+                        // 최종 점수에 동일 보정 적용
+                        let calibrated = VIXFetcher.shared.calibratedScoreForStock(sentiment.finalScore)
+                        let newScore = VIXFetcher.shared.updateScoreForMarketWithFallback(calibrated, marketType: .stock)
+                        currentScore = newScore
+                        score = newScore
+                        
+                        let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                        userDefaults?.set(currentScore, forKey: "lastStockScore")
+                        isLoading = false
+                        lastCryptoUpdate = nil
+                    }
+                } else {
+                    let url = URL(string: "https://api.alternative.me/fng/")!
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    let decoded = try JSONDecoder().decode(CryptoFearGreed.self, from: data)
+                    let value = Int(decoded.data.first?.value ?? "50") ?? 50
+                    let mood = decoded.data.first?.value_classification ?? ""
+                    
+                    await MainActor.run {
+                        // Crypto는 보정 없이 원점수 사용
+                        let newScore = VIXFetcher.shared.updateScoreForMarketWithFallback(value, marketType: .crypto)
+                        currentScore = newScore
+                        score = newScore
+                        
+                        let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                        userDefaults?.set(currentScore, forKey: "lastCryptoScore")
+                        
+                        currentCryptoMood = mood
+                        isLoading = false
+                        lastCryptoUpdate = Date()
+                    }
+                }
                             // 데이터 업데이트 후 검은색 오버레이 제거
                             await MainActor.run {
                                 withAnimation(.easeIn(duration: 0.2)) {
@@ -259,9 +367,16 @@ struct ContentView: View {
                             }
                         } catch {
                             await MainActor.run {
+                                // 에러 발생 시 이전 데이터 유지
+                                currentScore = VIXFetcher.shared.getLastValidScoreForMarket(newValue)
                                 errorMessage = "데이터를 가져오는데 실패했습니다: \(error.localizedDescription)"
                                 isLoading = false
                                 isTransitioning = false
+                                
+                                // 에러 메시지를 잠시만 표시
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    self.errorMessage = nil
+                                }
                             }
                         }
                     }
@@ -291,16 +406,26 @@ struct ContentView: View {
     }
     
     private func fetchData() {
+        // 로딩 시작 전에 현재 스코어를 백업
+        let previousScore = self.score
+        
         isLoading = true
         errorMessage = nil
+        
         Task {
             do {
                 if selectedMarket == .stock {
                     let sentiment = try await VIXFetcher.shared.fetchFromGithubDaily()
                     await MainActor.run {
-                        self.score = sentiment.finalScore
+                        // 최종 점수에 보정 적용(50 기준 편차 30% 축소)
+                        let calibrated = VIXFetcher.shared.calibratedScoreForStock(sentiment.finalScore)
+                        let newScore = VIXFetcher.shared.updateScoreForMarketWithFallback(calibrated, marketType: .stock)
+                        self.score = newScore
+                        self.currentScore = newScore
+                        
                         let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
-                        userDefaults?.set(sentiment.finalScore, forKey: "lastVIXScore")
+                        userDefaults?.set(self.score, forKey: "lastStockScore")
+                        
                         self.isLoading = false
                         self.cryptoMood = ""
                     }
@@ -311,17 +436,34 @@ struct ContentView: View {
                     let decoded = try JSONDecoder().decode(CryptoFearGreed.self, from: data)
                     let value = Int(decoded.data.first?.value ?? "50") ?? 50
                     let mood = decoded.data.first?.value_classification ?? ""
-                await MainActor.run {
-                        self.score = value
+                    
+                    await MainActor.run {
+                        // Crypto는 외부 API 점수를 직접 사용 (보정 없음)
+                        let newScore = VIXFetcher.shared.updateScoreForMarketWithFallback(value, marketType: .crypto)
+                        self.score = newScore
+                        self.currentScore = newScore
+                        
+                        // UserDefaults에 암호화폐 스코어 저장
+                        let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
+                        userDefaults?.set(self.score, forKey: "lastCryptoScore")
+                        
                         self.cryptoMood = mood
-                    self.isLoading = false
-                    self.lastCryptoUpdate = Date()
+                        self.isLoading = false
+                        self.lastCryptoUpdate = Date()
                     }
                 }
             } catch {
                 await MainActor.run {
+                    // 에러 발생 시 이전 데이터 유지
+                    self.score = previousScore
+                    self.currentScore = VIXFetcher.shared.getLastValidScoreForMarket(self.selectedMarket)
                     self.errorMessage = "데이터를 가져오는데 실패했습니다: \(error.localizedDescription)"
                     self.isLoading = false
+                    
+                    // 에러 메시지를 잠시만 표시
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        self.errorMessage = nil
+                    }
                 }
             }
         }
