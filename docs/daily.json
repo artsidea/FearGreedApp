@@ -1,9 +1,9 @@
 {
-  "asOf": "2025-08-29",
+  "asOf": "2025-08-30",
   "metrics": {
-    "vix": 15.510000228881836,
-    "currentSP": 6457.580078125,
-    "ma125": 5936.07919140625,
+    "vix": 15.359999656677246,
+    "currentSP": 6460.259765625,
+    "ma125": 5936.10062890625,
     "bond10Y": 4,
     "putCall": 0.95,
     "junkSpread": 2.75,
@@ -12,25 +12,25 @@
     "usdDxy": 103,
     "volatility": 0.12,
     "correlation": 0.65,
-    "sentiment": 67,
+    "sentiment": 68,
     "technical": 63,
     "economic": 75,
     "global": 60
   },
   "scores": {
-    "vixScore": 84,
+    "vixScore": 85,
     "momentumScore": 94,
-    "safeHavenScore": 71,
+    "safeHavenScore": 72,
     "putCallScore": 50,
     "junkScore": 88,
     "breadthScore": 97,
-    "volumeScore": 100,
+    "volumeScore": 75,
     "volatilityScore": 100,
-    "correlationScore": 90,
-    "sentimentScore": 67,
+    "correlationScore": 100,
+    "sentimentScore": 68,
     "technicalScore": 63,
     "economicScore": 75,
     "globalScore": 60,
-    "finalScore": 83
+    "finalScore": 82
   }
 }
