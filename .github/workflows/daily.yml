@@ -2,7 +2,8 @@ name: Build daily sentiment
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 매시간 실행
+    # 1시간마다 실행 (24회/일)
+    - cron: '0 * * * *'  # 매시 정각에 실행
   workflow_dispatch: # 수동 실행 가능
   push:
     branches: [ main ]
@@ -543,5 +544,3 @@ jobs:
             echo "docs/daily.json not found, skipping commit"
             exit 1
           fi
-
-
