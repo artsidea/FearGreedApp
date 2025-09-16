@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		4B79AAE72DD3967B00D67625 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B79AAE62DD3967B00D67625 /* WidgetKit.framework */; };
 		4B79AAE92DD3967B00D67625 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B79AAE82DD3967B00D67625 /* SwiftUI.framework */; };
-		4B79AAF82DD3967D00D67625 /* FearGreedWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4B79AAF82DD3967D00D67625 /* Bubble Index Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B79AAE42DD3967B00D67625 /* Bubble Index Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,7 +43,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				4B79AAF82DD3967D00D67625 /* FearGreedWidgetExtension.appex in Embed Foundation Extensions */,
+				4B79AAF82DD3967D00D67625 /* Bubble Index Widget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,28 +51,38 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4B79AA4E2DD1C75F00D67625 /* FearAndGreedScore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FearAndGreedScore.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B79AA4E2DD1C75F00D67625 /* Bubble Index.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Bubble Index.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B79AA5B2DD1C76100D67625 /* FearAndGreedScoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FearAndGreedScoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B79AA652DD1C76100D67625 /* FearAndGreedScoreUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FearAndGreedScoreUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FearGreedWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B79AAE42DD3967B00D67625 /* Bubble Index Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Bubble Index Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B79AAE62DD3967B00D67625 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		4B79AAE82DD3967B00D67625 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		4B79AAFF2DD3ADDB00D67625 /* FearGreedWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FearGreedWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "FearGreedWidgetExtension" target */ = {
+		3D600F682E56790400372D56 /* Exceptions for "FearAndGreedScore" folder in "Bubble Index" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */;
+			target = 4B79AA4D2DD1C75F00D67625 /* Bubble Index */;
+		};
+		4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "Bubble Index Widget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B79AAE32DD3967B00D67625 /* Bubble Index Widget */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B79AA502DD1C75F00D67625 /* FearAndGreedScore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3D600F682E56790400372D56 /* Exceptions for "FearAndGreedScore" folder in "Bubble Index" target */,
+			);
 			path = FearAndGreedScore;
 			sourceTree = "<group>";
 		};
@@ -89,7 +99,7 @@
 		4B79AAEA2DD3967B00D67625 /* FearGreedWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "FearGreedWidgetExtension" target */,
+				4B79AAFC2DD3967D00D67625 /* Exceptions for "FearGreedWidget" folder in "Bubble Index Widget" target */,
 			);
 			path = FearGreedWidget;
 			sourceTree = "<group>";
@@ -146,10 +156,10 @@
 		4B79AA4F2DD1C75F00D67625 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4B79AA4E2DD1C75F00D67625 /* FearAndGreedScore.app */,
+				4B79AA4E2DD1C75F00D67625 /* Bubble Index.app */,
 				4B79AA5B2DD1C76100D67625 /* FearAndGreedScoreTests.xctest */,
 				4B79AA652DD1C76100D67625 /* FearAndGreedScoreUITests.xctest */,
-				4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */,
+				4B79AAE42DD3967B00D67625 /* Bubble Index Widget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -166,9 +176,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4B79AA4D2DD1C75F00D67625 /* FearAndGreedScore */ = {
+		4B79AA4D2DD1C75F00D67625 /* Bubble Index */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4B79AA6F2DD1C76100D67625 /* Build configuration list for PBXNativeTarget "FearAndGreedScore" */;
+			buildConfigurationList = 4B79AA6F2DD1C76100D67625 /* Build configuration list for PBXNativeTarget "Bubble Index" */;
 			buildPhases = (
 				4B79AA4A2DD1C75F00D67625 /* Sources */,
 				4B79AA4B2DD1C75F00D67625 /* Frameworks */,
@@ -183,11 +193,11 @@
 			fileSystemSynchronizedGroups = (
 				4B79AA502DD1C75F00D67625 /* FearAndGreedScore */,
 			);
-			name = FearAndGreedScore;
+			name = "Bubble Index";
 			packageProductDependencies = (
 			);
 			productName = FearAndGreedScore;
-			productReference = 4B79AA4E2DD1C75F00D67625 /* FearAndGreedScore.app */;
+			productReference = 4B79AA4E2DD1C75F00D67625 /* Bubble Index.app */;
 			productType = "com.apple.product-type.application";
 		};
 		4B79AA5A2DD1C76100D67625 /* FearAndGreedScoreTests */ = {
@@ -236,9 +246,9 @@
 			productReference = 4B79AA652DD1C76100D67625 /* FearAndGreedScoreUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */ = {
+		4B79AAE32DD3967B00D67625 /* Bubble Index Widget */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "FearGreedWidgetExtension" */;
+			buildConfigurationList = 4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "Bubble Index Widget" */;
 			buildPhases = (
 				4B79AAE02DD3967B00D67625 /* Sources */,
 				4B79AAE12DD3967B00D67625 /* Frameworks */,
@@ -251,11 +261,11 @@
 			fileSystemSynchronizedGroups = (
 				4B79AAEA2DD3967B00D67625 /* FearGreedWidget */,
 			);
-			name = FearGreedWidgetExtension;
+			name = "Bubble Index Widget";
 			packageProductDependencies = (
 			);
 			productName = FearGreedWidgetExtension;
-			productReference = 4B79AAE42DD3967B00D67625 /* FearGreedWidgetExtension.appex */;
+			productReference = 4B79AAE42DD3967B00D67625 /* Bubble Index Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -298,10 +308,10 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4B79AA4D2DD1C75F00D67625 /* FearAndGreedScore */,
+				4B79AA4D2DD1C75F00D67625 /* Bubble Index */,
 				4B79AA5A2DD1C76100D67625 /* FearAndGreedScoreTests */,
 				4B79AA642DD1C76100D67625 /* FearAndGreedScoreUITests */,
-				4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */,
+				4B79AAE32DD3967B00D67625 /* Bubble Index Widget */,
 			);
 		};
 /* End PBXProject section */
@@ -371,17 +381,17 @@
 /* Begin PBXTargetDependency section */
 		4B79AA5D2DD1C76100D67625 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4B79AA4D2DD1C75F00D67625 /* FearAndGreedScore */;
+			target = 4B79AA4D2DD1C75F00D67625 /* Bubble Index */;
 			targetProxy = 4B79AA5C2DD1C76100D67625 /* PBXContainerItemProxy */;
 		};
 		4B79AA672DD1C76100D67625 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4B79AA4D2DD1C75F00D67625 /* FearAndGreedScore */;
+			target = 4B79AA4D2DD1C75F00D67625 /* Bubble Index */;
 			targetProxy = 4B79AA662DD1C76100D67625 /* PBXContainerItemProxy */;
 		};
 		4B79AAF72DD3967D00D67625 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4B79AAE32DD3967B00D67625 /* FearGreedWidgetExtension */;
+			target = 4B79AAE32DD3967B00D67625 /* Bubble Index Widget */;
 			targetProxy = 4B79AAF62DD3967D00D67625 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -520,6 +530,10 @@
 				DEVELOPMENT_TEAM = 688QA9GU4U;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FearAndGreedScore/Info.plist;
+				INFOPLIST_KEY_CNNRapidAPIHost = "fear-and-greed-index.p.rapidapi.com";
+				INFOPLIST_KEY_CNNRapidAPIKey = d502e6b3d6msh9da7e66f61a0d78p13aaecjsn68607a625a9a;
+				INFOPLIST_KEY_CNNRapidAPIURL = "https://fear-and-greed-index.p.rapidapi.com/v1/fgi?region=US";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -530,12 +544,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -551,6 +569,10 @@
 				DEVELOPMENT_TEAM = 688QA9GU4U;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FearAndGreedScore/Info.plist;
+				INFOPLIST_KEY_CNNRapidAPIHost = "fear-and-greed-index.p.rapidapi.com";
+				INFOPLIST_KEY_CNNRapidAPIKey = d502e6b3d6msh9da7e66f61a0d78p13aaecjsn68607a625a9a;
+				INFOPLIST_KEY_CNNRapidAPIURL = "https://fear-and-greed-index.p.rapidapi.com/v1/fgi?region=US";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -561,12 +583,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -660,7 +686,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score.FearGreedWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -688,7 +714,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "samixd.Feer---Greed-Score.FearGreedWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -710,7 +736,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4B79AA6F2DD1C76100D67625 /* Build configuration list for PBXNativeTarget "FearAndGreedScore" */ = {
+		4B79AA6F2DD1C76100D67625 /* Build configuration list for PBXNativeTarget "Bubble Index" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4B79AA702DD1C76100D67625 /* Debug */,
@@ -737,7 +763,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "FearGreedWidgetExtension" */ = {
+		4B79AAFD2DD3967D00D67625 /* Build configuration list for PBXNativeTarget "Bubble Index Widget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4B79AAFA2DD3967D00D67625 /* Debug */,
