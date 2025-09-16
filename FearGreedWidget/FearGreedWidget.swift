@@ -40,13 +40,22 @@ struct Provider: TimelineProvider {
         
         print("Widget: Using app's stock score: \(score)")
         
-        let entry = FearGreedEntry(date: Date(), score: score)
-
-        // 더 자주 업데이트 (1시간마다)
+        let currentDate = Date()
         let calendar = Calendar.current
-        let nextUpdate = calendar.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
-
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        
+        // 여러 시간대의 엔트리를 생성하여 더 자주 업데이트
+        var entries: [FearGreedEntry] = []
+        
+        // 현재 시간부터 시작하여 15분마다 업데이트
+        for minuteOffset in stride(from: 0, to: 240, by: 15) { // 4시간 동안 15분마다
+            if let entryDate = calendar.date(byAdding: .minute, value: minuteOffset, to: currentDate) {
+                let entry = FearGreedEntry(date: entryDate, score: score)
+                entries.append(entry)
+            }
+        }
+        
+        // atEnd 정책으로 변경하여 시스템이 더 자주 새로고침하도록 유도
+        let timeline = Timeline(entries: entries, policy: .atEnd)
         completion(timeline)
     }
 

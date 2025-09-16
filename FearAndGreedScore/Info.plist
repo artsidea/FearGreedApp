@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CNNRapidAPIHost</key>
+	<string>fear-and-greed-index.p.rapidapi.com</string>
+	<key>CNNRapidAPIKey</key>
+	<string>d502e6b3d6msh9da7e66f61a0d78p13aaecjsn68607a625a9a</string>
+	<key>CNNRapidAPIURL</key>
+	<string>https://fear-and-greed-index.p.rapidapi.com/v1/fgi?region=US</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-app-refresh</string>
+		<string>background-processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.hyujang.feargreed.refresh</string>
+	</array>
+</dict>
+</plist>

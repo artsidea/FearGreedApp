@@ -7,6 +7,28 @@
 
 import Foundation
 
+// 하루 중 변동 추적을 위한 구조체
+struct DailyChange: Codable {
+    let timestamp: Date
+    let fromScore: Int
+    let toScore: Int
+    let delta: Int
+    
+    var description: String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        let timeStr = formatter.string(from: timestamp)
+        
+        if delta > 0 {
+            return "⏶ +\(delta)pt (\(timeStr))"
+        } else if delta < 0 {
+            return "⏷ \(delta)pt (\(timeStr))"
+        } else {
+            return "＝ 0pt (\(timeStr))"
+        }
+    }
+}
+
 struct VIXFetcher {
     static let shared = VIXFetcher()
     private let baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX"
@@ -22,27 +44,13 @@ struct VIXFetcher {
     private let cryptoScoresKey = "recentCryptoScores"
     private let maxStoredScores = 7  // 최근 7일간의 데이터 유지
     
-    // 표시 보정(Stock) 계수: 50 기준 편차를 33%만 남김 → 83 -> 약 61
-    var stockCalibrationFactor: Double = 0.33
-
+    // 하루 중 변동 추적을 위한 키들
+    private let todayStockChangesKey = "todayStockChanges"
+    private let todayCryptoChangesKey = "todayCryptoChanges"
+    private let lastResetDateKey = "lastResetDate"
+    
     private init() {}
-
-    // CNN에 더 근접하도록 극단값을 완만하게 만드는 단조 보정 함수
-    // 50을 중심으로 편차를 factor만큼 축소 (ex. 0.7이면 30% 완화)
-    private func calibrateScore(_ score: Int, factor: Double = 0.7) -> Int {
-        let clamped = max(0, min(100, score))
-        let adjusted = 50.0 + (Double(clamped) - 50.0) * factor
-        return max(0, min(100, Int(round(adjusted))))
-    }
-
-    // 외부에서 사용할 수 있도록 공개 래퍼
-    func calibratedScore(_ score: Int, factor: Double = 0.7) -> Int {
-        return calibrateScore(score, factor: factor)
-    }
-
-    func calibratedScoreForStock(_ score: Int) -> Int {
-        return calibrateScore(score, factor: stockCalibrationFactor)
-    }
+    
     
     func fetchVIX() async throws -> Double {
         // 마지막 업데이트 시간 확인
@@ -89,14 +97,15 @@ struct VIXFetcher {
         
         let (data, response) = try await URLSession.shared.data(from: url)
         
-        // 디버깅을 위한 응답 출력
+        // 디버그 전용 출력
+#if DEBUG
         if let httpResponse = response as? HTTPURLResponse {
             print("HTTP Status Code: \(httpResponse.statusCode)")
         }
-        
         if let jsonString = String(data: data, encoding: .utf8) {
             print("API Response: \(jsonString)")
         }
+#endif
         
         let decoder = JSONDecoder()
         do {
@@ -209,7 +218,15 @@ struct VIXFetcher {
             return getLastStockScore()
         }
         
-        return addScoreAndCalculateAverage(newScore, for: stockScoresKey)
+        let oldScore = getLastStockScore()
+        let updatedScore = addScoreAndCalculateAverage(newScore, for: stockScoresKey)
+        
+        // 변동이 있으면 기록
+        if oldScore != updatedScore {
+            recordDailyChange(.stock, fromScore: oldScore, toScore: updatedScore)
+        }
+        
+        return updatedScore
     }
     
     // 암호화폐 스코어 업데이트 (이전 데이터 유지)
@@ -219,7 +236,15 @@ struct VIXFetcher {
             return getLastCryptoScore()
         }
         
-        return addScoreAndCalculateAverage(newScore, for: cryptoScoresKey)
+        let oldScore = getLastCryptoScore()
+        let updatedScore = addScoreAndCalculateAverage(newScore, for: cryptoScoresKey)
+        
+        // 변동이 있으면 기록
+        if oldScore != updatedScore {
+            recordDailyChange(.crypto, fromScore: oldScore, toScore: updatedScore)
+        }
+        
+        return updatedScore
     }
     
     // 네트워크 실패 시 이전 데이터 반환
@@ -230,6 +255,98 @@ struct VIXFetcher {
         case .crypto:
             return getLastCryptoScore()
         }
+    }
+    
+    // 오늘-어제 변화량(최근 두 개 값의 차이) 반환
+    func getDeltaForMarket(_ marketType: MarketType) -> Int? {
+        let recentScores: [Int]
+        switch marketType {
+        case .stock:
+            recentScores = getRecentScores(for: stockScoresKey)
+        case .crypto:
+            recentScores = getRecentScores(for: cryptoScoresKey)
+        }
+        guard recentScores.count >= 2 else { return nil }
+        return (recentScores.last ?? 0) - recentScores[recentScores.count - 2]
+    }
+    
+    // MARK: - 하루 중 변동 추적 관리
+    
+    // 새로운 날인지 확인하고 필요시 리셋
+    private func checkAndResetDailyChanges() {
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        if let lastResetDate = userDefaults.object(forKey: lastResetDateKey) as? Date {
+            let lastResetDay = Calendar.current.startOfDay(for: lastResetDate)
+            if today > lastResetDay {
+                // 새로운 날이므로 하루 변동 기록 리셋
+                userDefaults.removeObject(forKey: todayStockChangesKey)
+                userDefaults.removeObject(forKey: todayCryptoChangesKey)
+                userDefaults.set(today, forKey: lastResetDateKey)
+            }
+        } else {
+            // 처음 실행이므로 오늘 날짜로 설정
+            userDefaults.set(today, forKey: lastResetDateKey)
+        }
+    }
+    
+    // 하루 중 변동 기록 추가
+    private func recordDailyChange(_ marketType: MarketType, fromScore: Int, toScore: Int) {
+        checkAndResetDailyChanges()
+        
+        let delta = toScore - fromScore
+        if delta == 0 { return } // 변동이 없으면 기록하지 않음
+        
+        let change = DailyChange(timestamp: Date(), fromScore: fromScore, toScore: toScore, delta: delta)
+        let key = marketType == .stock ? todayStockChangesKey : todayCryptoChangesKey
+        
+        var changes = getDailyChanges(for: marketType)
+        changes.append(change)
+        
+        // 최대 20개까지만 보관 (너무 많이 쌓이지 않도록)
+        if changes.count > 20 {
+            changes = Array(changes.suffix(20))
+        }
+        
+        if let data = try? JSONEncoder().encode(changes) {
+            userDefaults.set(data, forKey: key)
+        }
+    }
+    
+    // 하루 중 변동 기록 조회
+    func getDailyChanges(for marketType: MarketType) -> [DailyChange] {
+        checkAndResetDailyChanges()
+        
+        let key = marketType == .stock ? todayStockChangesKey : todayCryptoChangesKey
+        guard let data = userDefaults.data(forKey: key),
+              let changes = try? JSONDecoder().decode([DailyChange].self, from: data) else {
+            return []
+        }
+        return changes
+    }
+    
+    // 오늘의 총 변동량 계산 (첫 번째 기록부터 현재까지)
+    func getTodayTotalDelta(for marketType: MarketType) -> Int? {
+        let changes = getDailyChanges(for: marketType)
+        guard !changes.isEmpty else { return nil }
+        
+        let firstScore = changes.first?.fromScore ?? 0
+        let lastScore = changes.last?.toScore ?? 0
+        return lastScore - firstScore
+    }
+    
+    // 마지막 변경 시간 가져오기
+    func getLastChangeTime(for marketType: MarketType) -> Date? {
+        let changes = getDailyChanges(for: marketType)
+        return changes.last?.timestamp
+    }
+    
+    // 오늘의 최대 상승/하락 변동 조회
+    func getTodayMaxChange(for marketType: MarketType) -> (maxUp: Int, maxDown: Int) {
+        let changes = getDailyChanges(for: marketType)
+        let maxUp = changes.map { $0.delta }.filter { $0 > 0 }.max() ?? 0
+        let maxDown = changes.map { $0.delta }.filter { $0 < 0 }.min() ?? 0
+        return (maxUp: maxUp, maxDown: maxDown)
     }
     
     // 디버깅용: 현재 저장된 데이터 확인
@@ -324,6 +441,16 @@ struct VIXFetcher {
     // 헬퍼 메서드들
     private func getRecentScores(for key: String) -> [Int] {
         return userDefaults.array(forKey: key) as? [Int] ?? []
+    }
+    
+    // 디버깅용 public 메서드 - 마켓별 최근 점수들 조회
+    func getRecentScores(for marketType: MarketType) -> [Int] {
+        switch marketType {
+        case .stock:
+            return getRecentScores(for: stockScoresKey)
+        case .crypto:
+            return getRecentScores(for: cryptoScoresKey)
+        }
     }
     
     private func addScoreAndCalculateAverage(_ newScore: Int, for key: String) -> Int {
@@ -499,13 +626,17 @@ extension VIXFetcher {
                 ("junk", payload.scores.junkScore, recomputed.junk),
                 ("breadth", payload.scores.breadthScore, recomputed.breadth)
             ]
+            #if DEBUG
             print("🔎 Metrics vs Scores 차이(절대값)")
             for (name, s, r) in diffs {
                 let d = abs(s - r)
                 print(" - \(name): payload=\(s), recomputed=\(r), diff=\(d)")
             }
+            #endif
         } else {
+            #if DEBUG
             print("ℹ️ metrics가 부족해 재계산 진단을 건너뜀")
+            #endif
         }
 
         // MarketSentimentScore 구성
