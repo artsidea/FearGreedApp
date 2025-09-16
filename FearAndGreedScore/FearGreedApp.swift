@@ -79,16 +79,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Task {
             do {
                 // CNN 데이터 가져오기
-                if let cnnScore = try? await CNNFearGreedFetcher.shared.fetchCNNScore() {
+                if let marketScore = try? await CNNFearGreedFetcher.shared.fetchMarketScore() {
                     let userDefaults = UserDefaults(suiteName: "group.com.hyujang.feargreed")
-                    userDefaults?.set(cnnScore, forKey: "lastStockScore")
+                    userDefaults?.set(marketScore.finalScore, forKey: "lastStockScore")
                     
                     // 위젯 새로고침
                     WidgetCenter.shared.reloadAllTimelines()
-                    print("📱 백그라운드에서 위젯 업데이트 완료: \(cnnScore)")
+                    print("📱 백그라운드에서 위젯 업데이트 완료: \(marketScore.finalScore)")
                 }
-
+                
                 task.setTaskCompleted(success: true)
+            } catch {
+                print("❌ 백그라운드 업데이트 실패: \(error)")
+                task.setTaskCompleted(success: false)
             }
         }
     }

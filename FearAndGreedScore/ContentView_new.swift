@@ -77,40 +77,9 @@ struct ContentView: View {
     @State private var screenBrightness: Double = 1.0
     @State private var isScreenDimmed: Bool = false
     @State private var lastInteractionTime: Date = Date()
-    @State private var isFirstLaunch = true  // 첫 실행 여부 추적
-    @State private var hasInitializedBubbles = false  // 버블 초기화 여부
     
     private let dimTimeout: TimeInterval = 120 // 2분 후 화면 어둡게
     private let screenOffTimeout: TimeInterval = 180 // 3분 후 화면 완전히 끄기
-    
-    // 시간 차이를 "(X minutes ago)" 형식으로 변환하는 함수
-    private func timeAgoString(from date: Date) -> String {
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-        let minutes = Int(interval / 60)
-        
-        if minutes < 1 {
-            return "(just now)"
-        } else if minutes == 1 {
-            return "(1 minute ago)"
-        } else if minutes < 60 {
-            return "(\(minutes) minutes ago)"
-        } else {
-            let hours = minutes / 60
-            if hours == 1 {
-                return "(1 hour ago)"
-            } else if hours < 24 {
-                return "(\(hours) hours ago)"
-            } else {
-                let days = hours / 24
-                if days == 1 {
-                    return "(1 day ago)"
-                } else {
-                    return "(\(days) days ago)"
-                }
-            }
-        }
-    }
     
     // CNN Fear & Greed Index 다음 업데이트 시각
     private var nextVIXUpdate: Date {
@@ -256,59 +225,38 @@ struct ContentView: View {
                 // 중앙 스코어 아래 변동 텍스트
                 GeometryReader { innerGeo in
                     let minDim = min(innerGeo.size.width, innerGeo.size.height)
-                    
-                    Group {
-                        if let delta = todayDelta {
-                            let arrow: String = {
-                                if delta > 0 { return "▲" }
-                                else if delta < 0 { return "▼" }
-                                else { return "＝" }
-                            }()
-                            
-                            let pointText: String = {
-                                if delta > 0 { return "\(abs(delta)) point" }
-                                else if delta < 0 { return "\(abs(delta)) point" }
-                                else { return "Same" }
-                            }()
-                            
-                            // 마지막 변경 시간 가져오기
-                            let timeText: String = {
-                                if let lastChangeTime = VIXFetcher.shared.getLastChangeTime(for: selectedMarket) {
-                                    return timeAgoString(from: lastChangeTime)
-                                } else {
-                                    return "(unknown)"
-                                }
-                            }()
-                            
-                            Text("\(arrow) \(pointText) \(timeText)")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(.black.opacity(0.7))
-                                        .stroke(.gray.opacity(0.3), lineWidth: 0.5)
-                                )
-                                .position(x: innerGeo.size.width/2,
-                                          y: innerGeo.size.height/2 + minDim * 0.15)
-                        } else {
-                            // 변동 데이터가 없을 때
-                            Text("＝ Same as Yesterday")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(.black.opacity(0.7))
-                                        .stroke(.gray.opacity(0.3), lineWidth: 0.5)
-                                )
-                                .position(x: innerGeo.size.width/2,
-                                          y: innerGeo.size.height/2 + minDim * 0.15)
-                        }
+                    if let delta = todayDelta {
+                        let arrow = delta > 0 ? "⏶" : (delta < 0 ? "⏷" : "·")
+                        let text = delta > 0 ? "\(abs(delta))pt Up Today" : (delta < 0 ? "\(abs(delta))pt Down Today" : "Same as Yesterday")
+                        
+                        Text("\(arrow) \(text)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(.black.opacity(0.7))
+                                    .stroke(.gray.opacity(0.3), lineWidth: 0.5)
+                            )
+                            .position(x: innerGeo.size.width/2,
+                                      y: innerGeo.size.height/2 + minDim * 0.15)
+                    } else {
+                        // 변동 데이터가 없을 때
+                        Text("＝ Same as Yesterday")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(.black.opacity(0.7))
+                                    .stroke(.gray.opacity(0.3), lineWidth: 0.5)
+                            )
+                            .position(x: innerGeo.size.width/2,
+                                      y: innerGeo.size.height/2 + minDim * 0.15)
                     }
                 }
                 .allowsHitTesting(false)
@@ -489,12 +437,6 @@ struct ContentView: View {
             // 현재 선택된 시장에 맞는 스코어 로드
             currentScore = VIXFetcher.shared.getScoreForMarket(selectedMarket)
             todayDelta = VIXFetcher.shared.getTodayTotalDelta(for: selectedMarket)
-            
-            // 첫 실행 이후로 설정
-            if isFirstLaunch {
-                isFirstLaunch = false
-                hasInitializedBubbles = true
-            }
             
             // 화면 꺼짐 타이머 시작
             startScreenDimTimer()

@@ -54,6 +54,9 @@ struct Provider: TimelineProvider {
             }
         }
         
+        // 다음 주요 업데이트는 15분 후
+        let nextUpdate = calendar.date(byAdding: .minute, value: 15, to: currentDate) ?? Date()
+        
         // atEnd 정책으로 변경하여 시스템이 더 자주 새로고침하도록 유도
         let timeline = Timeline(entries: entries, policy: .atEnd)
         completion(timeline)
