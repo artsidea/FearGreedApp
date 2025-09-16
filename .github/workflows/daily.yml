@@ -2,8 +2,7 @@ name: Build daily sentiment
 
 on:
   schedule:
-    - cron: '0 18 * * *' # 18:00 EDT (22:00 UTC) - 매일 저녁
-    - cron: '0 9 * * *'  # 09:00 EDT (13:00 UTC) - 매일 아침 (백업)
+    - cron: '0 * * * *'  # 매시간 실행
   workflow_dispatch: # 수동 실행 가능
   push:
     branches: [ main ]
