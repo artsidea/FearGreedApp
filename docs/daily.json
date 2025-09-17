@@ -1,5 +1,5 @@
 {
-  "asOf": "2025-09-16",
+  "asOf": "2025-09-17",
   "metrics": {
     "vix": 16.360000610351562,
     "currentSP": 6606.759765625,
@@ -15,7 +15,7 @@
     "sentiment": 66,
     "technical": 74,
     "economic": 75,
-    "global": 57,
+    "global": 56,
     "dollarStrength": 50
   },
   "scores": {
@@ -31,7 +31,7 @@
     "sentimentScore": 66,
     "technicalScore": 74,
     "economicScore": 75,
-    "globalScore": 57,
+    "globalScore": 56,
     "dollarStrength": 50,
     "finalScore": 84
   }
