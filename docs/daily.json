@@ -27,7 +27,7 @@
     "breadthScore": 100,
     "volumeScore": 12,
     "volatilityScore": 100,
-    "correlationScore": 99,
+    "correlationScore": 100,
     "sentimentScore": 67,
     "technicalScore": 75,
     "economicScore": 75,
