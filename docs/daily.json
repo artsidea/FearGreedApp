@@ -25,7 +25,7 @@
     "putCallScore": 50,
     "junkScore": 88,
     "breadthScore": 100,
-    "volumeScore": 90,
+    "volumeScore": 60,
     "volatilityScore": 100,
     "correlationScore": 96,
     "sentimentScore": 67,
@@ -33,6 +33,6 @@
     "economicScore": 75,
     "globalScore": 66,
     "dollarStrength": 50,
-    "finalScore": 85
+    "finalScore": 83
   }
 }
