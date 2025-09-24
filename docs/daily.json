@@ -15,7 +15,7 @@
     "sentiment": 66,
     "technical": 75,
     "economic": 75,
-    "global": 67,
+    "global": 66,
     "dollarStrength": 50
   },
   "scores": {
@@ -25,14 +25,14 @@
     "putCallScore": 50,
     "junkScore": 89,
     "breadthScore": 98,
-    "volumeScore": 92,
+    "volumeScore": 60,
     "volatilityScore": 100,
     "correlationScore": 100,
     "sentimentScore": 66,
     "technicalScore": 75,
     "economicScore": 75,
-    "globalScore": 67,
+    "globalScore": 66,
     "dollarStrength": 50,
-    "finalScore": 84
+    "finalScore": 83
   }
 }
