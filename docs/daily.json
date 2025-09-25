@@ -6,7 +6,7 @@
     "ma125": 6056.4083046875,
     "bond10Y": 4,
     "putCall": 0.95,
-    "junkSpread": 3.5,
+    "junkSpread": 2.71,
     "spHigh": 6693.75,
     "spLow": 4982.77001953125,
     "usdDxy": 103,
@@ -23,7 +23,7 @@
     "momentumScore": 98,
     "safeHavenScore": 68,
     "putCallScore": 50,
-    "junkScore": 50,
+    "junkScore": 88,
     "breadthScore": 97,
     "volumeScore": 63,
     "volatilityScore": 100,
@@ -33,6 +33,6 @@
     "economicScore": 75,
     "globalScore": 67,
     "dollarStrength": 50,
-    "finalScore": 79
+    "finalScore": 83
   }
 }
