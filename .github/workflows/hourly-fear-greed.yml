@@ -2,8 +2,8 @@ name: Hourly Fear & Greed Index Update
 
 on:
   schedule:
-    - cron: '0 * * * *' # 매시간 실행
-  workflow_dispatch: # 수동 실행 가능
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   update-fear-greed:
@@ -27,13 +27,11 @@ jobs:
         echo "🔑 API 키 확인: ${RAPIDAPI_KEY:0:10}..."
         echo "🌐 API 호스트: $RAPIDAPI_HOST"
         
-        # RapidAPI 호출
         response=$(curl -s -w "HTTP_CODE:%{http_code}" -X GET \
           "https://${RAPIDAPI_HOST}/v1/fgi?region=US" \
           -H "X-RapidAPI-Key: ${RAPIDAPI_KEY}" \
           -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}")
         
-        # HTTP 상태 코드 분리
         http_code=$(echo "$response" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
         json_response=$(echo "$response" | sed 's/HTTP_CODE:[0-9]*$//')
         
@@ -45,32 +43,21 @@ jobs:
           exit 1
         fi
         
-        # JSON 파싱
         score=$(echo "$json_response" | jq -r '.fgi.now.value // 50')
         classification=$(echo "$json_response" | jq -r '.fgi.now.valueText // "Neutral"')
         
         echo "✅ 파싱된 점수: $score"
         echo "✅ 파싱된 분류: $classification"
         
-        # 시간 정보
         current_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
-        # hourly.json 생성
-        cat > hourly.json << 'EOF'
-{
-  "score": SCORE_PLACEHOLDER,
-  "classification": "CLASSIFICATION_PLACEHOLDER",
-  "lastUpdated": "TIME_PLACEHOLDER",
-  "timestamp": "TIMESTAMP_PLACEHOLDER"
-}
-EOF
-        
-        # 플레이스홀더 교체
-        sed -i "s/SCORE_PLACEHOLDER/$score/g" hourly.json
-        sed -i "s/CLASSIFICATION_PLACEHOLDER/$classification/g" hourly.json
-        sed -i "s/TIME_PLACEHOLDER/$current_time/g" hourly.json
-        sed -i "s/TIMESTAMP_PLACEHOLDER/$timestamp/g" hourly.json
+        echo "{" > hourly.json
+        echo "  \"score\": $score," >> hourly.json
+        echo "  \"classification\": \"$classification\"," >> hourly.json
+        echo "  \"lastUpdated\": \"$current_time\"," >> hourly.json
+        echo "  \"timestamp\": \"$timestamp\"" >> hourly.json
+        echo "}" >> hourly.json
         
         echo "📄 생성된 hourly.json:"
         cat hourly.json
@@ -83,4 +70,3 @@ EOF
         publish_branch: gh-pages
         keep_files: false
         force_orphan: true
-
