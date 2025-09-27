@@ -1,0 +1,71 @@
+name: Hourly Fear & Greed Index Update
+
+on:
+  schedule:
+    # 매시간 실행 (UTC 기준)
+    - cron: '0 * * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  update-fear-greed:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Fetch Fear & Greed Index from RapidAPI
+      env:
+        RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        RAPIDAPI_HOST: ${{ secrets.RAPIDAPI_HOST }}
+      run: |
+        # RapidAPI를 통해 CNN Fear & Greed Index 가져오기
+        response=$(curl -s -X GET \
+          "https://${RAPIDAPI_HOST}/v1/fgi?region=US" \
+          -H "X-RapidAPI-Key: ${RAPIDAPI_KEY}" \
+          -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}")
+        
+        echo "RapidAPI Response: $response"
+        
+        # JSON 파싱하여 필요한 데이터 추출
+        score=$(echo "$response" | jq -r '.fgi.now.value // .score // .fear_greed_index // 50')
+        classification=$(echo "$response" | jq -r '.fgi.now.valueText // .classification // "Neutral"')
+        
+        # 현재 시간 생성
+        current_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        # hourly.json 파일 생성
+        cat > hourly.json << EOF
+        {
+          "score": $score,
+          "classification": "$classification",
+          "lastUpdated": "$current_time",
+          "timestamp": "$timestamp"
+        }
+        EOF
+        
+        echo "Generated hourly.json:"
+        cat hourly.json
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add hourly.json
+        git diff --staged --quiet || git commit -m "Update Fear & Greed Index - $(date -u +'%Y-%m-%d %H:%M UTC')"
+        git push
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: .
+        publish_branch: gh-pages
+        keep_files: true
+
