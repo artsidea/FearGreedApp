@@ -2,22 +2,27 @@ name: Hourly Fear & Greed Index Update
 
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    - cron: '0 * * * *'  # 매시간 실행
+  workflow_dispatch: # 수동 실행 가능
+
+permissions:
+  contents: write
 
 jobs:
   update-fear-greed:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
+    timeout-minutes: 10
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
         
     - name: Fetch Fear & Greed Index from RapidAPI
       env:
@@ -27,11 +32,13 @@ jobs:
         echo "🔑 API 키 확인: ${RAPIDAPI_KEY:0:10}..."
         echo "🌐 API 호스트: $RAPIDAPI_HOST"
         
+        # RapidAPI 호출
         response=$(curl -s -w "HTTP_CODE:%{http_code}" -X GET \
           "https://${RAPIDAPI_HOST}/v1/fgi?region=US" \
           -H "X-RapidAPI-Key: ${RAPIDAPI_KEY}" \
           -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}")
         
+        # HTTP 상태 코드 분리
         http_code=$(echo "$response" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
         json_response=$(echo "$response" | sed 's/HTTP_CODE:[0-9]*$//')
         
@@ -43,30 +50,70 @@ jobs:
           exit 1
         fi
         
+        # JSON 파싱
         score=$(echo "$json_response" | jq -r '.fgi.now.value // 50')
         classification=$(echo "$json_response" | jq -r '.fgi.now.valueText // "Neutral"')
         
         echo "✅ 파싱된 점수: $score"
         echo "✅ 파싱된 분류: $classification"
         
+        # 시간 정보
         current_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
-        echo "{" > hourly.json
-        echo "  \"score\": $score," >> hourly.json
-        echo "  \"classification\": \"$classification\"," >> hourly.json
-        echo "  \"lastUpdated\": \"$current_time\"," >> hourly.json
-        echo "  \"timestamp\": \"$timestamp\"" >> hourly.json
-        echo "}" >> hourly.json
+        # docs 디렉토리 생성
+        mkdir -p docs
         
-        echo "📄 생성된 hourly.json:"
-        cat hourly.json
+        # hourly.json 생성 (docs 폴더에)
+        cat > docs/hourly.json << EOF
+{
+  "score": $score,
+  "classification": "$classification",
+  "lastUpdated": "$current_time",
+  "timestamp": "$timestamp"
+}
+EOF
         
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: .
-        publish_branch: gh-pages
-        keep_files: false
-        force_orphan: true
+        echo "📄 생성된 docs/hourly.json:"
+        cat docs/hourly.json
+        
+    - name: Commit and push changes
+      run: |
+        # Git 설정
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # docs/hourly.json이 존재하는지 확인
+        if [ -f "docs/hourly.json" ]; then
+          echo "docs/hourly.json exists, proceeding with commit"
+          
+          # docs/hourly.json만 추가
+          git add docs/hourly.json
+          
+          # 변경사항이 있는지 확인
+          if git diff --staged --quiet; then
+            echo "No changes to commit - hourly.json is up to date"
+          else
+            echo "Changes detected, committing..."
+            git commit -m "Update Fear & Greed Index - $(date -u +'%Y-%m-%d %H:%M UTC')"
+            
+            # Push with retry logic
+            for i in {1..3}; do
+              echo "Attempting to push (attempt $i/3)..."
+              if git push; then
+                echo "Push successful!"
+                break
+              else
+                echo "Push failed, attempt $i/3"
+                if [ $i -eq 3 ]; then
+                  echo "All push attempts failed"
+                  exit 1
+                fi
+                sleep 5
+              fi
+            done
+          fi
+        else
+          echo "docs/hourly.json not found, skipping commit"
+          exit 1
+        fi
