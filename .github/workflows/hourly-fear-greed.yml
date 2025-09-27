@@ -57,14 +57,20 @@ jobs:
         timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
         # hourly.json 생성
-        cat > hourly.json << EOF
+        cat > hourly.json << 'EOF'
 {
-  "score": $score,
-  "classification": "$classification",
-  "lastUpdated": "$current_time",
-  "timestamp": "$timestamp"
+  "score": SCORE_PLACEHOLDER,
+  "classification": "CLASSIFICATION_PLACEHOLDER",
+  "lastUpdated": "TIME_PLACEHOLDER",
+  "timestamp": "TIMESTAMP_PLACEHOLDER"
 }
 EOF
+        
+        # 플레이스홀더 교체
+        sed -i "s/SCORE_PLACEHOLDER/$score/g" hourly.json
+        sed -i "s/CLASSIFICATION_PLACEHOLDER/$classification/g" hourly.json
+        sed -i "s/TIME_PLACEHOLDER/$current_time/g" hourly.json
+        sed -i "s/TIMESTAMP_PLACEHOLDER/$timestamp/g" hourly.json
         
         echo "📄 생성된 hourly.json:"
         cat hourly.json
