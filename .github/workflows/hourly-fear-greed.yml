@@ -2,64 +2,72 @@ name: Hourly Fear & Greed Index Update
 
 on:
   schedule:
-    # 매시간 실행 (UTC 기준)
-    - cron: '0 * * * *'
+    - cron: '0 * * * *' # 매시간 실행
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
   update-fear-greed:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Fetch Fear & Greed Index from RapidAPI
       env:
         RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         RAPIDAPI_HOST: ${{ secrets.RAPIDAPI_HOST }}
       run: |
-        # RapidAPI를 통해 CNN Fear & Greed Index 가져오기
-        response=$(curl -s -X GET \
+        echo "🔑 API 키 확인: ${RAPIDAPI_KEY:0:10}..."
+        echo "🌐 API 호스트: $RAPIDAPI_HOST"
+        
+        # RapidAPI 호출
+        response=$(curl -s -w "HTTP_CODE:%{http_code}" -X GET \
           "https://${RAPIDAPI_HOST}/v1/fgi?region=US" \
           -H "X-RapidAPI-Key: ${RAPIDAPI_KEY}" \
           -H "X-RapidAPI-Host: ${RAPIDAPI_HOST}")
         
-        echo "RapidAPI Response: $response"
+        # HTTP 상태 코드 분리
+        http_code=$(echo "$response" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+        json_response=$(echo "$response" | sed 's/HTTP_CODE:[0-9]*$//')
         
-        # JSON 파싱하여 필요한 데이터 추출
-        score=$(echo "$response" | jq -r '.fgi.now.value // .score // .fear_greed_index // 50')
-        classification=$(echo "$response" | jq -r '.fgi.now.valueText // .classification // "Neutral"')
+        echo "📡 HTTP Status: $http_code"
+        echo "📊 API Response: $json_response"
         
-        # 현재 시간 생성
+        if [ "$http_code" != "200" ]; then
+          echo "❌ API 호출 실패: HTTP $http_code"
+          exit 1
+        fi
+        
+        # JSON 파싱
+        score=$(echo "$json_response" | jq -r '.fgi.now.value // 50')
+        classification=$(echo "$json_response" | jq -r '.fgi.now.valueText // "Neutral"')
+        
+        echo "✅ 파싱된 점수: $score"
+        echo "✅ 파싱된 분류: $classification"
+        
+        # 시간 정보
         current_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
-        # hourly.json 파일 생성
+        # hourly.json 생성
         cat > hourly.json << EOF
-        {
-          "score": $score,
-          "classification": "$classification",
-          "lastUpdated": "$current_time",
-          "timestamp": "$timestamp"
-        }
-        EOF
+{
+  "score": $score,
+  "classification": "$classification",
+  "lastUpdated": "$current_time",
+  "timestamp": "$timestamp"
+}
+EOF
         
-        echo "Generated hourly.json:"
+        echo "📄 생성된 hourly.json:"
         cat hourly.json
-        
-    - name: Commit and push changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add hourly.json
-        git diff --staged --quiet || git commit -m "Update Fear & Greed Index - $(date -u +'%Y-%m-%d %H:%M UTC')"
-        git push
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
@@ -67,5 +75,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: .
         publish_branch: gh-pages
-        keep_files: true
+        keep_files: false
+        force_orphan: true
 
