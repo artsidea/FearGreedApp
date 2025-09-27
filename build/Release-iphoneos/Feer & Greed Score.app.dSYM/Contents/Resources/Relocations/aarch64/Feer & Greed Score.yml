@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/samjang/Documents/0-Xcode/Feer & Greed Score/build/Release-iphoneos/Feer & Greed Score.app/Feer & Greed Score'
+relocations:     []
+...

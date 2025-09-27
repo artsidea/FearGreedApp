@@ -1,0 +1,32 @@
+{
+  "source": "/Users/samjang/Documents/0-Xcode/Feer & Greed Score/FearGreedWidget/FearGreedWidgetBundle.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Fear & Greed Score",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's market mood based on VIX or Crypto",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 26
+        }
+      },
+      {
+        "comment": "",
+        "key": "Timer is running",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 47
+        }
+      }
+    ]
+  },
+  "version": 1
+}
