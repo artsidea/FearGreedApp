@@ -65,14 +65,12 @@ jobs:
         mkdir -p docs
         
         # hourly.json 생성 (docs 폴더에)
-        cat > docs/hourly.json << EOF
-{
-  "score": $score,
-  "classification": "$classification",
-  "lastUpdated": "$current_time",
-  "timestamp": "$timestamp"
-}
-EOF
+        echo "{" > docs/hourly.json
+        echo "  \"score\": $score," >> docs/hourly.json
+        echo "  \"classification\": \"$classification\"," >> docs/hourly.json
+        echo "  \"lastUpdated\": \"$current_time\"," >> docs/hourly.json
+        echo "  \"timestamp\": \"$timestamp\"" >> docs/hourly.json
+        echo "}" >> docs/hourly.json
         
         echo "📄 생성된 docs/hourly.json:"
         cat docs/hourly.json
