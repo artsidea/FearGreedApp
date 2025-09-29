@@ -1,7 +1,7 @@
 {
   "asOf": "2025-09-29",
   "metrics": {
-    "vix": 16.040000915527344,
+    "vix": 16.1200008392334,
     "currentSP": 6661.2099609375,
     "ma125": 6080.596546875,
     "bond10Y": 4,
@@ -25,7 +25,7 @@
     "putCallScore": 50,
     "junkScore": 88,
     "breadthScore": 98,
-    "volumeScore": 94,
+    "volumeScore": 93,
     "volatilityScore": 100,
     "correlationScore": 91,
     "sentimentScore": 67,
