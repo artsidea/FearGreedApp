@@ -1,5 +1,5 @@
 {
-  "asOf": "2025-10-05",
+  "asOf": "2025-10-06",
   "metrics": {
     "vix": 16.649999618530273,
     "currentSP": 6715.7900390625,
@@ -27,7 +27,7 @@
     "breadthScore": 100,
     "volumeScore": 65,
     "volatilityScore": 100,
-    "correlationScore": 77,
+    "correlationScore": 76,
     "sentimentScore": 66,
     "technicalScore": 71,
     "economicScore": 75,
