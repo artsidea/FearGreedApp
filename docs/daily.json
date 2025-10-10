@@ -27,12 +27,12 @@
     "breadthScore": 99,
     "volumeScore": 70,
     "volatilityScore": 100,
-    "correlationScore": 100,
+    "correlationScore": 83,
     "sentimentScore": 66,
     "technicalScore": 63,
     "economicScore": 75,
     "globalScore": 79,
     "dollarStrength": 50,
-    "finalScore": 82
+    "finalScore": 81
   }
 }
